@@ -1,0 +1,55 @@
+@media(max-width:1260px) {
+    .main-menu-wrap {
+        display: none;
+    }
+    .side-menu .side-menu-title {
+        margin-bottom: 0;
+    }
+    header {
+        min-height: 80px;
+    }
+    header .mobile-menu-handler,
+    header .mobile-account-options-handler {
+        height: 80px;
+    }
+    header .mobile-menu-handler img[alt="pull-icon"],
+    header .mobile-account-options-handler img[alt="pull-icon"] {
+        top: 31px;
+    }
+    header .mobile-menu-handler .icon-user,
+    header .mobile-account-options-handler .icon-user {
+        top: 28px;
+    }
+    header .logo-mobile {
+        top: 17px;
+    }
+    .side-menu .user-quickview {
+        height: 55px;
+        margin: 10px 0 10px 20px;
+        width: 212px;
+    }
+}
+
+@media(max-width:767px) {
+    .banner h1 {
+        width: auto;
+    }
+    .banner {
+        min-height: auto;
+        padding: 30px 15px;
+    }
+    .banner .search-widget {
+        height: auto;
+        padding-bottom: 25px;
+        position: unset;
+    }
+    .banner .search-widget-form .select-block {
+        display: block;
+        margin: 0 0 10px;
+        width: 100%;
+    }
+    #footer-top .company-info,
+    #footer-top .link-info {
+        width: 100%;
+    }
+}

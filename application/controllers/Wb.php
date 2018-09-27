@@ -1,0 +1,1288 @@
+<?php defined('BASEPATH') OR exit('No direct script access allowed');
+
+/**
+ * Example
+ *
+ * This is an example of a few basic user interaction methods you could use
+ * all done with a hardcoded array.
+ *
+ * @package		CodeIgniter
+ * @subpackage	Rest Server
+ * @category	Controller
+ * @author		Phil Sturgeon
+ * @link		http://philsturgeon.co.uk/code/
+*/
+
+// This can be removed if you use __autoload() in config.php OR use Modular Extensions
+require APPPATH.'/libraries/REST_Controller.php';
+
+class Wb extends REST_Controller
+{
+	function __construct()
+    {
+        // Construct our parent class
+        parent::__construct();        
+		$this->load->model('wb_model');			
+    }  	
+	
+	//Add BANK
+	function add_bank_post(){
+		$bank_name 				= $this->post('bank_name');
+		$exist_bank_name = $this->wb_model->getsingle('ac_banks',array('bank_name' => $bank_name));		
+		if($bank_name=='')
+		{
+			$response= array('status'=>'201', 'message'=>'bank_name input missing!', 'data'=>'');
+		}			
+		else if($bank_name!='' && $exist_bank_name)
+		{
+			$response= array('status'=>'201', 'message'=>'bank_name Already Exists!', 'data'=>'');
+		}
+		if($bank_name!='' && !$exist_bank_name)
+		{
+			$insdata = array(
+						'bank_name' 	=> $bank_name,						
+						'entry_date'	=> date('Y-m-d')
+				);
+			$this->wb_model->insertData('ac_banks',$insdata);
+			$response= array('status'=>'200', 'message'=>'Bank added Successfully!', 'data'=>'');
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	//GET ALL BANKS
+	function banks_get(){       
+		$data = $this->wb_model->getAllwhere('ac_banks',array('bank_id !='=>'0'));
+		if(count($data)>0)
+		{
+			$final = array();
+			foreach($data as $d)
+			{
+				$final_data['bank_id'] 		= $d->bank_id;
+				$final_data['bank_name'] 	= $d->bank_name;
+				$final_data['entry_date'] 	= $d->entry_date;
+				if($d->status=='0')
+				{
+					$final_data['status'] 	= "Active";
+				}else{
+					$final_data['status'] 	= "Deactive";
+				}
+				$final[] = $final_data;
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final );
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Edit Bank
+	function edit_bank_post(){
+		$bank_id 	= $this->post('bank_id');
+		if($bank_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'bank_id input missing!', 'data'=>'');
+		}
+		$data = $this->wb_model->getsingle('ac_banks',array('bank_id'=>$bank_id));
+		
+		if($data && $bank_id!='')
+		{
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$data );
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'no record found!', 'data'=>'');
+		}
+																				
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Update Bank
+	function update_bank_post(){
+		$bank_id 	= $this->post('bank_id');
+		$bank_name 	= $this->post('bank_name');
+		if($bank_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'bank_id input missing!', 'data'=>'');
+		}
+		$exist_bank_name = $this->wb_model->getsingle('ac_banks',array('bank_name' => $bank_name,'bank_id !='=>$bank_id));		
+		if($bank_name=='')
+		{
+			$response= array('status'=>'201', 'message'=>'bank_name input missing!', 'data'=>'');
+		}			
+		else if($bank_name!='' && $exist_bank_name)
+		{
+			$response= array('status'=>'201', 'message'=>'bank_name Already Exists!', 'data'=>'');
+		}
+		if($bank_id!='' && $bank_name!='' && !$exist_bank_name)
+		{
+			$updata = array(
+						'bank_name' 	=> $bank_name
+				);
+			$this->wb_model->updateData('ac_banks',$updata,array('bank_id'=>$bank_id));
+			$response= array('status'=>'200', 'message'=>'Bank Details Updated Successfully!', 'data'=>'');
+		}
+																				
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Deactivate Bank
+	function deactivate_bank_post(){
+		$bank_id 	= $this->post('bank_id');		
+		if($bank_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'bank_id input missing!', 'data'=>'');
+		}		
+		if($bank_id!='')
+		{
+			$updata = array(
+						'status' 	=> '1'
+				);
+			$this->wb_model->updateData('ac_banks',$updata,array('bank_id'=>$bank_id));
+			$response= array('status'=>'200', 'message'=>'Bank Deactivated Successfully!', 'data'=>'');
+		}																				
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Activate Bank
+	function activate_bank_post(){
+		$bank_id 	= $this->post('bank_id');		
+		if($bank_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'bank_id input missing!', 'data'=>'');
+		}		
+		if($bank_id!='')
+		{
+			$updata = array(
+						'status' 	=> '0'
+				);
+			$this->wb_model->updateData('ac_banks',$updata,array('bank_id'=>$bank_id));
+			$response= array('status'=>'200', 'message'=>'Bank Activated Successfully!', 'data'=>'');
+		}																				
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//REGISTRATION API
+	function register_post(){
+		if($this->session->userdata('otp_no')!="")
+		{
+			$otp_no = $this->session->userdata('otp_no');
+		}
+		else
+		{
+			for ($i = 0; $i<6; $i++) 
+			{
+				$otp_n .= mt_rand(0,9);
+			}
+			$otp_no = "123456";//$otp_n;
+		}
+		
+		$errors					= "";
+		$otp 					= "";
+		$full_name 				= $this->post('full_name');
+		$email 					= $this->post('email');
+		$std 					= $this->post('std');
+		$mobile_no 				= $this->post('mobile_no');
+		$identification_no 		= $this->post('identification_no');
+		$identification_type 	= $this->post('identification_type');
+		$country 				= $this->post('country');
+		$province 				= $this->post('province');
+		$city 					= $this->post('city');
+		$district 				= $this->post('district');
+		$street 				= $this->post('street');
+		$ac_holder_name 		= $this->post('ac_holder_name');
+		$account_no_iban 		= $this->post('account_no_iban');
+		$bank_id 				= $this->post('bank_id');
+		$swift_code 			= $this->post('swift_code');
+		$password 				= $this->post('password');
+		$confirm_password 		= $this->post('confirm_password');
+		
+		
+		if($full_name=='')
+		{
+			$response= array('status'=>'201', 'message'=>'full_name input missing!', 'data'=>'');
+		}		
+		$exist_email = $this->wb_model->getsingle('ac_users',array('email' => $email));
+		$regex = '/^[^0-9][_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,3})$/';
+		if($email=='')
+		{
+			$response= array('status'=>'201', 'message'=>'email input missing!', 'data'=>'');
+		}
+		else if (!preg_match($regex, $email)) 
+		{
+			$response= array('status'=>'201', 'message'=>'email Not Valid!', 'data'=>'');
+		}	
+		else if($email!='' && $exist_email)
+		{
+			$response= array('status'=>'201', 'message'=>'email Already Exists!', 'data'=>'');
+		}
+		if($std=='')
+		{
+			$response= array('status'=>'201', 'message'=>'std input missing!', 'data'=>'');
+		}
+		$exist_mobile_no = $this->wb_model->getsingle('ac_users',array('mobile_no' => $mobile_no));
+		if($mobile_no=='')
+		{
+			$response= array('status'=>'201', 'message'=>'mobile_no input missing!', 'data'=>'');
+		}		
+		else if($mobile_no!='' && $exist_mobile_no)
+		{
+			$response= array('status'=>'201', 'message'=>'mobile_no Already Exists!', 'data'=>'');
+		}
+		if($identification_no=='')
+		{
+			$response= array('status'=>'201', 'message'=>'identification_no input missing!', 'data'=>'');
+		}
+		if($identification_type=='')
+		{
+			$response= array('status'=>'201', 'message'=>'identification_type input missing!', 'data'=>'');
+		}
+		if($country=='')
+		{
+			$response= array('status'=>'201', 'message'=>'country input missing!', 'data'=>'');
+		}
+		if($province=='')
+		{
+			$response= array('status'=>'201', 'message'=>'province input missing!', 'data'=>'');
+		}
+		if($ac_holder_name=='')
+		{
+			$response= array('status'=>'201', 'message'=>'ac_holder_name input missing!', 'data'=>'');
+		}
+		if($account_no_iban=='')
+		{
+			$response= array('status'=>'201', 'message'=>'account_no_iban input missing!', 'data'=>'');
+		}		
+		if($bank_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'bank_id input missing!', 'data'=>'');
+		}
+		if($swift_code=='')
+		{
+			$response= array('status'=>'201', 'message'=>'swift_code input missing!', 'data'=>'');
+		}
+		if($password=='')
+		{
+			$response= array('status'=>'201', 'message'=>'password input missing!', 'data'=>'');
+		}
+		else if(strlen($password)<8)
+		{
+			$response= array('status'=>'201', 'message'=>'Password must be minimum 8 characters long!', 'data'=>'');
+		}
+		if($confirm_password=='')
+		{
+			$response= array('status'=>'201', 'message'=>'confirm_password input missing!', 'data'=>'');
+		}
+		if($confirm_password!=$password && $confirm_password!='' && $password!='' )
+		{
+			$response= array('status'=>'201', 'message'=>'confirm_password and password not match!', 'data'=>'');
+		}
+		
+		if($full_name!='' && $email!='' && preg_match($regex, $email) && !$exist_email && $std!='' && $mobile_no!='' && !$exist_mobile_no 
+			&& $identification_no!='' && $identification_type!='' && $country!='' && $province!='' && $ac_holder_name!=''
+			&& $account_no_iban!='' && $bank_id!='' && $swift_code!='' && $password!='' && $confirm_password!='' 
+			&& $confirm_password == $password && strlen($password)>8 )
+		{
+			$data['upload_path'] = 'documents/';
+			$data['allowed_types'] = 'jpg|png|jpeg';
+			$data['max_size'] = '20480000';
+			$data['max_width'] = '10240000';
+			$data['max_height'] = '7680000';
+			$data['encrypt_name'] = false;
+
+			$this->load->library('upload', $data);
+			$user_doc = '';
+			if ($this->upload->do_upload('document'))
+			{
+				$attachment_data = array('upload_data' => $this->upload->data());
+				$user_doc = $attachment_data['upload_data']['file_name'];
+			}
+			else
+			{
+				if($_FILES['document']['name']!="")
+				{					
+					$errors = "Allowed upload type jpg, png and jpeg images only.";
+					$response= array('status'=>'201', 'message'=>$errors, 'data'=>'');
+				}else{
+					$errors="";
+				}
+				
+			}
+			
+			if($errors=="")
+			{				
+				$insdata = array(
+						'full_name' 			=> $full_name,
+						'email'	 				=> $email,
+						'std'	 				=> $std,						
+						'mobile_no' 			=> $mobile_no,
+						'identification_no' 	=> $identification_no,
+						'identification_type' 	=> $identification_type,
+						'country'				=> $country,
+						'province'				=> $province,
+						'city'					=> $city,
+						'district'				=> $district,
+						'street'				=> $street,
+						'ac_holder_name'		=> $ac_holder_name,
+						'account_no_iban'		=> $account_no_iban,
+						'bank_id'				=> $bank_id,
+						'swift_code'			=> $swift_code,
+						'password'				=> $password,
+						'user_doc'				=> $user_doc,
+						'registration_date' 	=> date('Y-m-d'),
+						'otp_no'				=> $otp_no
+				);
+				$this->session->set_userdata($insdata);
+				$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=>'');
+			}
+			
+		}
+		
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+		
+	}
+	
+	//Submit OTP Registration API
+	function submit_otp_post(){
+		$otp 				= $this->post('otp');
+		if($otp=='')
+		{
+			$response= array('status'=>'201', 'message'=>'otp input missing!', 'data'=>'');
+		}
+		if($otp!='' && $otp!=$this->session->userdata('otp_no'))
+		{
+			$response= array('status'=>'201', 'message'=>'OTP not match!', 'data'=>'');
+		}
+		if($this->session->userdata('otp_no')=='')
+		{
+			$response= array('status'=>'201', 'message'=>'Session Expired!', 'data'=>'');
+		}
+		if($otp!='' && $this->session->userdata('otp_no')!='' && $otp==$this->session->userdata('otp_no'))
+		{
+			$insdata = array(
+						'full_name' 			=> $this->session->userdata('full_name'),
+						'email'	 				=> $this->session->userdata('email'),
+						'std'	 				=> $this->session->userdata('std'),						
+						'mobile_no' 			=> $this->session->userdata('mobile_no'),
+						'identification_no' 	=> $this->session->userdata('identification_no'),
+						'identification_type' 	=> $this->session->userdata('identification_type'),
+						'country'				=> $this->session->userdata('country'),
+						'province'				=> $this->session->userdata('province'),
+						'city'					=> $this->session->userdata('city'),
+						'district'				=> $this->session->userdata('district'),
+						'street'				=> $this->session->userdata('street'),
+						'ac_holder_name'		=> $this->session->userdata('ac_holder_name'),
+						'account_no_iban'		=> $this->session->userdata('account_no_iban'),
+						'bank_id'				=> $this->session->userdata('bank_id'),
+						'swift_code'			=> $this->session->userdata('swift_code'),
+						'password'				=> md5($this->session->userdata('password')),
+						'user_doc'				=> $this->session->userdata('user_doc'),
+						'registration_date' 	=> $this->session->userdata('registration_date')						
+				);
+			$this->wb_model->insertData('ac_users',$insdata);
+			
+			//SESSION DESTROY
+			$sessdata = array(
+						'full_name' 			=> '',
+						'email'	 				=> '',
+						'std'	 				=> '',						
+						'mobile_no' 			=> '',
+						'identification_no' 	=> '',
+						'identification_type' 	=> '',
+						'country'				=> '',
+						'province'				=> '',
+						'city'					=> '',
+						'district'				=> '',
+						'street'				=> '',
+						'ac_holder_name'		=> '',
+						'account_no_iban'		=> '',
+						'bank_id'				=> '',
+						'swift_code'			=> '',
+						'password'				=> '',
+						'user_doc'				=> '',
+						'registration_date' 	=> '',
+						'otp_no'				=> ''
+				);
+			$this->session->unset_userdata($sessdata);
+			$this->session->sess_destroy(); 
+			
+			$response= array('status'=>'200', 'message'=>'Registration Successfully!', 'data'=>'');
+		}
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	// Resend OTP
+	function resend_otp_get(){
+		if($this->session->userdata('otp_no')!="")
+		{
+			$otp_no = $this->session->userdata('otp_no');
+		}
+		else
+		{
+			for ($i = 0; $i<6; $i++) 
+			{
+				$otp_n .= mt_rand(0,9);
+			}
+			$otp_no = "123456";//$otp_n;
+		}
+		if($this->session->userdata('otp_no')=='')
+		{
+			$response= array('status'=>'201', 'message'=>'Session Expired!', 'data'=>'');
+		}
+		else
+		{
+			$this->session->set_userdata('otp_no',$otp_no);
+			$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=>'');
+		}
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//change mobile no. Registration API
+	function change_mobile_no_post(){
+		$mobile_no 				= $this->post('mobile_no');
+		$exist_mobile_no = $this->wb_model->getsingle('ac_users',array('mobile_no' => $mobile_no));
+		if($mobile_no=='')
+		{
+			$response= array('status'=>'201', 'message'=>'mobile_no input missing!', 'data'=>'');
+		}		
+		else if($mobile_no!='' && $exist_mobile_no)
+		{
+			$response= array('status'=>'201', 'message'=>'mobile_no Already Exists!', 'data'=>'');
+		}
+		
+		if($this->session->userdata('otp_no')=='')
+		{
+			$response= array('status'=>'201', 'message'=>'Session Expired!', 'data'=>'');
+		}
+		if($mobile_no!='' && !$exist_mobile_no && $this->session->userdata('otp_no')!='')
+		{
+			$this->session->set_userdata('mobile_no',$mobile_no);
+			$response= array('status'=>'200', 'message'=>'mobile_no change successfully!', 'data'=>'');
+		}
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	// LOGIN
+	function login_post(){
+		$email_mobile_no = $this->post('email_mobile_no');
+		$password 		 = $this->post('password');
+		
+		if($email_mobile_no=='')
+		{
+			$response= array('status'=>'201', 'message'=>'email_mobile_no input missing!', 'data'=>'');
+		}		
+		if($password=='')
+		{
+			$response= array('status'=>'201', 'message'=>'password input missing!', 'data'=>'');
+		}
+		if($email_mobile_no!='' && $password!='')
+		{
+			$result = $this->wb_model->login($email_mobile_no ,$password);
+			if($result)
+			{
+				$response= array('status'=>'200', 'message'=>'login successfully!', 'data'=>$result);
+			}
+			else
+			{
+				$response= array('status'=>'201', 'message'=>'email_mobile_no or password not match!', 'data'=>'');
+			}
+		}
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Forgot Password
+	function forgot_password_post(){
+		if($this->session->userdata('otp_no')!="")
+		{
+			$otp_no = $this->session->userdata('otp_no');
+		}
+		else
+		{
+			for ($i = 0; $i<6; $i++) 
+			{
+				$otp_n .= mt_rand(0,9);
+			}
+			$otp_no = "123456";//$otp_n;
+		}
+		
+		$mobile_no 		 = $this->post('mobile_no');
+		$exist_mobile_no = $this->wb_model->getsingle('ac_users',array('mobile_no' => $mobile_no));
+		if($mobile_no=='')
+		{
+			$response= array('status'=>'201', 'message'=>'mobile_no input missing!', 'data'=>'');
+		}		
+		else if($mobile_no!='' && !$exist_mobile_no)
+		{
+			$response= array('status'=>'201', 'message'=>'mobile_no Not Exists!', 'data'=>'');
+		}
+		
+		if($mobile_no!='' && $exist_mobile_no)
+		{
+			$this->session->set_userdata('otp_no',$otp_no);
+			$this->session->set_userdata('mobile_no',$mobile_no);
+			$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=>'');
+		}
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Forgot Password Submit OTP
+	function forgot_submit_otp_post(){
+		$otp 				= $this->post('otp');
+		if($otp=='')
+		{
+			$response= array('status'=>'201', 'message'=>'otp input missing!', 'data'=>'');
+		}
+		if($otp!='' && $otp!=$this->session->userdata('otp_no'))
+		{
+			$response= array('status'=>'201', 'message'=>'OTP not match!', 'data'=>'');
+		}
+		if($this->session->userdata('otp_no')=='')
+		{
+			$response= array('status'=>'201', 'message'=>'Session Expired!', 'data'=>'');
+		}
+		if($otp!='' && $this->session->userdata('otp_no')!='' && $otp==$this->session->userdata('otp_no'))
+		{
+			for ($i = 0; $i<6; $i++) 
+			{
+				$newpwd .= mt_rand(0,9);
+			}
+			$new_password = "123456";//$newpwd;
+			
+			$mobile_no = $this->session->userdata('mobile_no');
+			$this->wb_model->updateData('ac_users',array('password'=>md5($new_password)),array('mobile_no'=>$mobile_no));
+			
+			//SESSION DESTROY
+			$sessdata = array(											
+						'mobile_no' => '',						
+						'otp_no' 	=> ''						
+				);
+			$this->session->unset_userdata($sessdata);
+			$this->session->sess_destroy(); 
+			
+			$response= array('status'=>'200', 'message'=>'Password send Successfully!', 'data'=>'');
+		}
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Change Password
+	function change_password_post(){
+		$user_id 				= $this->post('user_id');
+		$old_password 			= $this->post('old_password');
+		$new_password 			= $this->post('new_password');
+		$confirm_password 		= $this->post('confirm_password');
+		
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		$user_data = $this->wb_model->getsingle('ac_users',array('user_id' => $user_id,'password'=>md5($old_password)));
+		if($old_password=='')
+		{
+			$response= array('status'=>'201', 'message'=>'old_password input missing!', 'data'=>'');
+		}
+		else if(!$user_data)
+		{
+			$response= array('status'=>'201', 'message'=>'old_password Not match!', 'data'=>'');
+		}
+		if($new_password=='')
+		{
+			$response= array('status'=>'201', 'message'=>'new_password input missing!', 'data'=>'');
+		}
+		else if(strlen($new_password)<8)
+		{
+			$response= array('status'=>'201', 'message'=>'new_password must be minimum 8 characters long!', 'data'=>'');
+		}
+		if($confirm_password=='')
+		{
+			$response= array('status'=>'201', 'message'=>'confirm_password input missing!', 'data'=>'');
+		}
+		if($new_password!='' && $confirm_password!='' && $new_password!=$confirm_password)
+		{
+			$response= array('status'=>'201', 'message'=>'new_password and confirm_password not match!', 'data'=>'');
+		}
+		if($new_password!='' && $confirm_password!='' && $new_password==$confirm_password && $user_data && strlen($new_password)>8)
+		{
+			$this->wb_model->updateData('ac_users',array('password'=>md5($new_password)),array('user_id'=>$user_id));			
+			$response= array('status'=>'200', 'message'=>'Password changed Successfully!', 'data'=>'');
+		}
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//View Profile
+	function view_profile_post(){
+		$user_id 				= $this->post('user_id');
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		$user_data = $this->wb_model->getsingle('ac_users',array('user_id' => $user_id));
+		if(!$user_data)
+		{
+			$response= array('status'=>'201', 'message'=>'no record found!', 'data'=>'');
+		}
+		else
+		{
+			$final = array();
+			$final['user_id'] 			= $user_data->user_id;
+			$final['full_name'] 		= $user_data->full_name;
+			$final['email'] 			= $user_data->email;
+			$final['std'] 				= $user_data->std;
+			$final['mobile_no'] 		= $user_data->mobile_no;
+			$final['country'] 			= $user_data->country;
+			$final['province'] 			= $user_data->province;
+			$final['city'] 				= $user_data->city;
+			$final['identification_no'] = $user_data->identification_no;
+			$final['identification_type'] = $user_data->identification_type;
+			$final['district'] 			= $user_data->district;
+			$final['street'] 			= $user_data->street;
+			$final['ac_holder_name'] 	= $user_data->ac_holder_name;
+			$final['account_no_iban'] 	= $user_data->account_no_iban;
+			$final['bank_id'] 			= $user_data->bank_id;
+			$bank_data = $this->wb_model->getsingle('ac_banks',array('id' => $user_data->bank_id));
+			$final['bank'] 				= $bank_data->name;
+			$final['swift_code'] 		= $user_data->swift_code;
+			if($user_data->user_doc!='')
+			{
+			$final['user_doc'] 			= base_url()."documents/".$user_data->user_doc;	
+			}else{
+			$final['user_doc'] 			= $user_data->user_doc;
+			}
+			$final['registration_date'] = $user_data->registration_date;
+			
+			$final_data = (object)$final;
+			$response= array('status'=>'200', 'message'=>'', 'data'=>$final_data);
+		}
+		
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Edit Profile
+	function edit_profile_post(){
+		if($this->session->userdata('otp_no')!="")
+		{
+			$otp_no = $this->session->userdata('otp_no');
+		}
+		else
+		{
+			for ($i = 0; $i<6; $i++) 
+			{
+				$otp_n .= mt_rand(0,9);
+			}
+			$otp_no = "123456";//$otp_n;
+		}
+		
+		$errors					= "";
+		$otp 					= "";
+		$user_id 				= $this->post('user_id');
+		$full_name 				= $this->post('full_name');
+		$email 					= $this->post('email');
+		$std 					= $this->post('std');
+		$mobile_no 				= $this->post('mobile_no');
+		$identification_no 		= $this->post('identification_no');
+		$identification_type 	= $this->post('identification_type');
+		$country 				= $this->post('country');
+		$province 				= $this->post('province');
+		$city 					= $this->post('city');
+		$district 				= $this->post('district');
+		$street 				= $this->post('street');
+		$ac_holder_name 		= $this->post('ac_holder_name');
+		$account_no_iban 		= $this->post('account_no_iban');
+		$bank_id 				= $this->post('bank_id');
+		$swift_code 			= $this->post('swift_code');
+		
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		if($full_name=='')
+		{
+			$response= array('status'=>'201', 'message'=>'full_name input missing!', 'data'=>'');
+		}
+		$exist_email = $this->wb_model->getsingle('ac_users',array('email' => $email,'user_id !='=>$user_id));
+		$regex = '/^[^0-9][_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,3})$/';
+		if($email=='')
+		{
+			$response= array('status'=>'201', 'message'=>'email input missing!', 'data'=>'');
+		}
+		else if (!preg_match($regex, $email)) 
+		{
+			$response= array('status'=>'201', 'message'=>'email Not Valid!', 'data'=>'');
+		}	
+		else if($email!='' && $exist_email)
+		{
+			$response= array('status'=>'201', 'message'=>'email Already Exists!', 'data'=>'');
+		}
+		if($std=='')
+		{
+			$response= array('status'=>'201', 'message'=>'std input missing!', 'data'=>'');
+		}
+		$exist_mobile_no = $this->wb_model->getsingle('ac_users',array('mobile_no' => $mobile_no,'user_id !='=>$user_id));
+		if($mobile_no=='')
+		{
+			$response= array('status'=>'201', 'message'=>'mobile_no input missing!', 'data'=>'');
+		}		
+		else if($mobile_no!='' && $exist_mobile_no)
+		{
+			$response= array('status'=>'201', 'message'=>'mobile_no Already Exists!', 'data'=>'');
+		}
+		if($identification_no=='')
+		{
+			$response= array('status'=>'201', 'message'=>'identification_no input missing!', 'data'=>'');
+		}
+		if($identification_type=='')
+		{
+			$response= array('status'=>'201', 'message'=>'identification_type input missing!', 'data'=>'');
+		}
+		if($country=='')
+		{
+			$response= array('status'=>'201', 'message'=>'country input missing!', 'data'=>'');
+		}
+		if($province=='')
+		{
+			$response= array('status'=>'201', 'message'=>'province input missing!', 'data'=>'');
+		}
+		if($ac_holder_name=='')
+		{
+			$response= array('status'=>'201', 'message'=>'ac_holder_name input missing!', 'data'=>'');
+		}
+		if($account_no_iban=='')
+		{
+			$response= array('status'=>'201', 'message'=>'account_no_iban input missing!', 'data'=>'');
+		}		
+		if($bank_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'bank_id input missing!', 'data'=>'');
+		}
+		if($swift_code=='')
+		{
+			$response= array('status'=>'201', 'message'=>'swift_code input missing!', 'data'=>'');
+		}
+		
+		
+		if($user_id!='' && $full_name!='' && $email!='' && preg_match($regex, $email) && !$exist_email && $std!='' && $mobile_no!='' && !$exist_mobile_no 
+			&& $identification_no!='' && $identification_type!='' && $country!='' && $province!='' && $ac_holder_name!=''
+			&& $account_no_iban!='' && $bank_id!='' && $swift_code!='')
+		{
+			$data['upload_path'] = 'documents/';
+			$data['allowed_types'] = 'gif|jpg|png';
+			$data['max_size'] = '20480000';
+			$data['max_width'] = '10240000';
+			$data['max_height'] = '7680000';
+			$data['encrypt_name'] = false;
+
+			$this->load->library('upload', $data);
+			
+			$user_doc_data = $this->wb_model->getsingle('ac_users',array('user_id'=>$user_id));
+			$user_doc = $user_doc_data->user_doc;
+			if ($this->upload->do_upload('document'))
+			{
+				$attachment_data = array('upload_data' => $this->upload->data());
+				$user_doc = $attachment_data['upload_data']['file_name'];
+			}
+			else
+			{
+				if($_FILES['document']['name']!="")
+				{					
+					$errors = "Allowed upload type jpg, png and jpeg images only.";
+					$response= array('status'=>'201', 'message'=>$errors, 'data'=>'');
+				}else{
+					$errors="";
+				}
+				
+			}
+			
+			if($errors=="")
+			{				
+				$insdata = array(
+						'user_id' 				=> $user_id,
+						'full_name' 			=> $full_name,
+						'email'	 				=> $email,
+						'std'	 				=> $std,						
+						'mobile_no' 			=> $mobile_no,
+						'identification_no' 	=> $identification_no,
+						'identification_type' 	=> $identification_type,
+						'country'				=> $country,
+						'province'				=> $province,
+						'city'					=> $city,
+						'district'				=> $district,
+						'street'				=> $street,
+						'ac_holder_name'		=> $ac_holder_name,
+						'account_no_iban'		=> $account_no_iban,
+						'bank_id'				=> $bank_id,
+						'swift_code'			=> $swift_code,						
+						'user_doc'				=> $user_doc,						
+						'otp_no'				=> $otp_no
+				);
+				$this->session->set_userdata($insdata);
+				$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=>'');
+			}
+			
+		}		
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+		
+	}
+	
+	//Submit OTP Edit Profile
+	function profile_submit_otp_post(){
+		$otp 				= $this->post('otp');
+		if($otp=='')
+		{
+			$response= array('status'=>'201', 'message'=>'otp input missing!', 'data'=>'');
+		}
+		if($otp!='' && $otp!=$this->session->userdata('otp_no'))
+		{
+			$response= array('status'=>'201', 'message'=>'OTP not match!', 'data'=>'');
+		}
+		if($this->session->userdata('otp_no')=='')
+		{
+			$response= array('status'=>'201', 'message'=>'Session Expired!', 'data'=>'');
+		}
+		if($otp!='' && $this->session->userdata('otp_no')!='' && $otp==$this->session->userdata('otp_no'))
+		{
+			$updata = array(
+						'full_name' 			=> $this->session->userdata('full_name'),
+						'email'	 				=> $this->session->userdata('email'),
+						'std'	 				=> $this->session->userdata('std'),						
+						'mobile_no' 			=> $this->session->userdata('mobile_no'),
+						'identification_no' 	=> $this->session->userdata('identification_no'),
+						'identification_type' 	=> $this->session->userdata('identification_type'),
+						'country'				=> $this->session->userdata('country'),
+						'province'				=> $this->session->userdata('province'),
+						'city'					=> $this->session->userdata('city'),
+						'district'				=> $this->session->userdata('district'),
+						'street'				=> $this->session->userdata('street'),
+						'ac_holder_name'		=> $this->session->userdata('ac_holder_name'),
+						'account_no_iban'		=> $this->session->userdata('account_no_iban'),
+						'bank_id'				=> $this->session->userdata('bank_id'),
+						'swift_code'			=> $this->session->userdata('swift_code'),						
+						'user_doc'				=> $this->session->userdata('user_doc')											
+				);
+			$this->wb_model->updateData('ac_users',$updata,array('user_id'=>$this->session->userdata('user_id')));			
+			
+			//SESSION DESTROY
+			$sessdata = array(
+						'user_id' 				=> '',
+						'full_name' 			=> '',
+						'email'	 				=> '',
+						'std'	 				=> '',						
+						'mobile_no' 			=> '',
+						'identification_no' 	=> '',
+						'identification_type' 	=> '',
+						'country'				=> '',
+						'province'				=> '',
+						'city'					=> '',
+						'district'				=> '',
+						'street'				=> '',
+						'ac_holder_name'		=> '',
+						'account_no_iban'		=> '',
+						'bank_id'				=> '',
+						'swift_code'			=> '',						
+						'user_doc'				=> '',						
+						'otp_no'				=> ''
+				);
+			$this->session->unset_userdata($sessdata);
+			$this->session->sess_destroy(); 
+			
+			$response= array('status'=>'200', 'message'=>'Profile Update Successfully!', 'data'=>'');
+		}
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Add category
+	function add_category_post(){
+		
+		$errors="";
+		$category_name 	= $this->post('category_name');
+		$exist = $this->wb_model->getsingle('ac_categories',array('name' => $category_name));
+		if($category_name=='')
+		{
+			$response= array('status'=>'201', 'message'=>'category_name input missing!', 'data'=>'');
+		}		
+		else if($category_name!='' && $exist)
+		{
+			$response= array('status'=>'201', 'message'=>'category_name Already Exists!', 'data'=>'');
+		}
+		
+		if($category_name!='' && !$exist)
+		{
+			$data['upload_path'] = 'uploads/category_icon/';
+			$data['allowed_types'] = 'png';
+			$data['max_size'] = '20480000';
+			$data['max_width'] = '10240000';
+			$data['max_height'] = '7680000';
+			$data['encrypt_name'] = false;
+
+			$this->load->library('upload', $data);
+			$icon = '';
+			if ($this->upload->do_upload('icon'))
+			{
+				$attachment_data = array('upload_data' => $this->upload->data());
+				$icon = $attachment_data['upload_data']['file_name'];
+			}
+			else
+			{
+				if($_FILES['icon']['name']!="")
+				{					
+					$errors = "Allowed upload type png images only.";
+					$response= array('status'=>'201', 'message'=>$errors, 'data'=>'');
+				}else{
+					$errors="";
+				}
+				
+			}
+			
+			if($errors=="")
+			{
+				$insdata = array(
+						'name' 			=> $category_name,
+						'icon' 			=> $icon,
+						'entry_date'	=> date('Y-m-d')
+				);
+				$this->wb_model->insertData('ac_categories',$insdata);
+				$response= array('status'=>'200', 'message'=>'Category added Successfully!', 'data'=>'');
+			}
+		}
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//GET Categories
+	function categories_get(){       
+		$data = $this->wb_model->getAllrecord('ac_categories');
+		if(count($data)>0)
+		{
+			$final = array();
+			foreach($data as $d)
+			{
+				$final_data['category_id'] 	= $d->category_id;
+				$final_data['name'] 		= $d->name;
+				if($d->icon!='')
+				{
+					$final_data['icon'] 		= base_url()."uploads/category_icon/".$d->icon;
+				}else{
+					$final_data['icon'] 		= $d->icon;
+				}
+				
+				$final_data['entry_date'] 	= $d->entry_date;
+				$final[] = $final_data;
+			}
+			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final );
+		}
+		else
+		{
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$data );
+		}
+																				
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Edit Categories
+	function edit_category_post(){
+		$category_id 	= $this->post('category_id');
+		if($category_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'category_id input missing!', 'data'=>'');
+		}
+		$data = $this->wb_model->getAllwhere('ac_categories',array('category_id'=>$category_id));
+		
+		if(count($data)>0 && $category_id!='')
+		{
+			$final = array();
+			foreach($data as $d)
+			{
+				$final_data['category_id'] 	= $d->category_id;
+				$final_data['name'] 		= $d->name;
+				if($d->icon!='')
+				{
+					$final_data['icon'] 		= base_url()."uploads/category_icon/".$d->icon;
+				}else{
+					$final_data['icon'] 		= $d->icon;
+				}
+				
+				$final_data['entry_date'] 	= $d->entry_date;
+				
+			}
+			$finals = (object)$final_data;
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$finals );
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'no record found!', 'data'=>'');
+		}
+																				
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Update category
+	function update_category_post(){
+		
+		$errors="";
+		$category_id 	= $this->post('category_id');
+		$category_name 	= $this->post('category_name');
+		$exist = $this->wb_model->getsingle('ac_categories',array('name' => $category_name,'category_id !='=>$category_id));
+		if($category_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'category_id input missing!', 'data'=>'');
+		}
+		if($category_name=='')
+		{
+			$response= array('status'=>'201', 'message'=>'category_name input missing!', 'data'=>'');
+		}		
+		else if($category_name!='' && $exist)
+		{
+			$response= array('status'=>'201', 'message'=>'category_name Already Exists!', 'data'=>'');
+		}
+		
+		if($category_id!='' && $category_name!='' && !$exist)
+		{
+			$data['upload_path'] = 'uploads/category_icon/';
+			$data['allowed_types'] = 'png';
+			$data['max_size'] = '20480000';
+			$data['max_width'] = '10240000';
+			$data['max_height'] = '7680000';
+			$data['encrypt_name'] = false;
+
+			$this->load->library('upload', $data);
+			$icon_data = $this->wb_model->getsingle('ac_categories',array('category_id'=>$category_id));
+			$icon = $icon_data->icon;
+			if ($this->upload->do_upload('icon'))
+			{
+				$attachment_data = array('upload_data' => $this->upload->data());
+				$icon = $attachment_data['upload_data']['file_name'];
+			}
+			else
+			{
+				if($_FILES['icon']['name']!="")
+				{					
+					$errors = "Allowed upload type png images only.";
+					$response= array('status'=>'201', 'message'=>$errors, 'data'=>'');
+				}else{
+					$errors="";
+				}
+				
+			}
+			
+			if($errors=="")
+			{
+				$updata = array(
+						'name' 			=> $category_name,
+						'icon' 			=> $icon						
+				);
+				$this->wb_model->updateData('ac_categories',$updata,array('category_id'=>$category_id));
+				$response= array('status'=>'200', 'message'=>'Category updated Successfully!', 'data'=>'');
+			}
+		}
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Add Product
+	function add_product_post(){		
+		
+		$category_id 			= $this->post('category_id');
+		$product_name 			= $this->post('product_name');
+		$description 			= $this->post('description');
+		$selling_price 			= $this->post('selling_price');
+		$bid_start_date_time 	= $this->post('bid_start_date_time');
+		$bid_end_date_time 		= $this->post('bid_end_date_time');
+		
+		if($category_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'category_id input missing!', 'data'=>'');
+		}
+		if($product_name=='')
+		{
+			$response= array('status'=>'201', 'message'=>'product_name input missing!', 'data'=>'');
+		}
+		else if(strlen($product_name)>40)
+		{
+			$response= array('status'=>'201', 'message'=>'product_name Max 40 Characters!', 'data'=>'');
+		}		
+		if($description=='')
+		{
+			$response= array('status'=>'201', 'message'=>'description input missing!', 'data'=>'');
+		}
+		if($selling_price=='')
+		{
+			$response= array('status'=>'201', 'message'=>'selling_price input missing!', 'data'=>'');
+		}
+		if($bid_start_date_time=='')
+		{
+			$response= array('status'=>'201', 'message'=>'bid_start_date_time input missing!', 'data'=>'');
+		}
+		if($bid_end_date_time=='')
+		{
+			$response= array('status'=>'201', 'message'=>'bid_end_date_time input missing!', 'data'=>'');
+		}
+		if($category_id!='' && $product_name!='' && strlen($product_name)<40 && $description!='' && $selling_price!=''
+		 && $bid_start_date_time!='' && $bid_end_date_time!=''
+		)
+		{
+			$insdata = array(
+						'category_id' 			=> $category_id,
+						'product_name' 			=> $product_name,
+						'description' 			=> $description,
+						'selling_price' 		=> $selling_price,
+						'bid_start_date_time' 	=> $bid_start_date_time,
+						'bid_end_date_time' 	=> $bid_end_date_time,
+						'entry_date'			=> date('Y-m-d')
+				);
+			$product_id = $this->wb_model->insertData('ac_products',$insdata);
+			$ins_data = array('product_id'=>$product_id);			
+			$response= array('status'=>'200', 'message'=>'Product added Successfully!', 'data'=>$ins_data);
+		}
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Add Product
+	function upload_document_post(){		
+		
+		$product_id 			= $this->post('product_id');
+		
+		if($product_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+		}
+		if($product_id!='' && !empty($_FILES['files']['name']))
+		{
+            $filesCount = count($_FILES['files']['name']);
+			$error="1";
+            for($i = 0; $i < $filesCount; $i++)
+			{
+                $_FILES['file']['name']     = $_FILES['files']['name'][$i];
+                $_FILES['file']['type']     = $_FILES['files']['type'][$i];
+                $_FILES['file']['tmp_name'] = $_FILES['files']['tmp_name'][$i];
+                $_FILES['file']['error']    = $_FILES['files']['error'][$i];
+                $_FILES['file']['size']     = $_FILES['files']['size'][$i];
+                
+                // File upload configuration
+                $uploadPath 			= 'uploads/product_documents/';
+                $config['upload_path'] 	= $uploadPath;
+                $config['allowed_types']= '*';
+                
+                // Load and initialize upload library
+                $this->load->library('upload', $config);
+                $this->upload->initialize($config);
+                
+                // Upload file to server
+                if($this->upload->do_upload('file')){
+                    $error="0";
+					// Uploaded file data
+                    $fileData = $this->upload->data();
+                    //$uploadData[$i]['file_name'] = $fileData['file_name'];
+                    
+					$insdata = array(
+						'product_id' 	=> $product_id,
+						'document' 		=> $fileData['file_name'],						
+						'upload_date'	=> date('Y-m-d')
+					);
+					$this->wb_model->insertData('ac_product_documents',$insdata);
+                }
+            }
+			if($error==1)
+			{
+				$response= array('status'=>'201', 'message'=>'Some problem occurred, please try again!', 'data'=>'');
+			}else{
+				$response= array('status'=>'200', 'message'=>'Documents upload successfully!', 'data'=>'');
+			}
+			
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'please upload atleast one file!', 'data'=>'');
+		}	
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Add Product
+	function upload_images_post(){		
+		
+		$product_id 			= $this->post('product_id');
+		
+		if($product_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+		}
+		if($product_id!='' && !empty($_FILES['files']['name']))
+		{
+            $filesCount = count($_FILES['files']['name']);
+			$error="1";
+            for($i = 0; $i < $filesCount; $i++)
+			{
+                $_FILES['file']['name']     = $_FILES['files']['name'][$i];
+                $_FILES['file']['type']     = $_FILES['files']['type'][$i];
+                $_FILES['file']['tmp_name'] = $_FILES['files']['tmp_name'][$i];
+                $_FILES['file']['error']    = $_FILES['files']['error'][$i];
+                $_FILES['file']['size']     = $_FILES['files']['size'][$i];
+                
+                // File upload configuration
+                $uploadPath 			= 'uploads/product_images/';
+                $config['upload_path'] 	= $uploadPath;
+                $config['allowed_types']= 'jpg|png|jpeg';
+                
+                // Load and initialize upload library
+                $this->load->library('upload', $config);
+                $this->upload->initialize($config);
+                
+                // Upload file to server
+                if($this->upload->do_upload('file')){
+                    $error="0";
+					// Uploaded file data
+                    $fileData = $this->upload->data();
+                    //$uploadData[$i]['file_name'] = $fileData['file_name'];
+                    
+					$insdata = array(
+						'product_id' 	=> $product_id,
+						'image' 		=> $fileData['file_name'],						
+						'upload_date'	=> date('Y-m-d')
+					);
+					$this->wb_model->insertData('ac_product_images',$insdata);
+                }
+            }
+			if($error==1)
+			{
+				$response= array('status'=>'201', 'message'=>'Some problem occurred, please try again!', 'data'=>'');
+			}else{
+				$response= array('status'=>'200', 'message'=>'Images upload successfully!', 'data'=>'');
+			}
+			
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'please upload atleast one file!', 'data'=>'');
+		}	
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//GET ALL Products
+	function products_get(){       
+		$data = $this->wb_model->getAllwhere('ac_banks');
+		if(count($data)>0)
+		{
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$data );
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+		
+
+}
+	
+
