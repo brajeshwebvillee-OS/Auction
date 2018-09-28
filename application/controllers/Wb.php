@@ -78,7 +78,7 @@ class Wb extends REST_Controller
         $this->response($response	, 200); // 200 being the HTTP response code		
 	}
 	
-	//Edit Bank
+	//Edit Or View Bank
 	function edit_bank_post(){
 		$bank_id 	= $this->post('bank_id');
 		if($bank_id=='')
@@ -285,7 +285,7 @@ class Wb extends REST_Controller
 			&& $account_no_iban!='' && $bank_id!='' && $swift_code!='' && $password!='' && $confirm_password!='' 
 			&& $confirm_password == $password && strlen($password)>8 )
 		{
-			$data['upload_path'] = 'documents/';
+			$data['upload_path'] = 'uploads/user_documents/';
 			$data['allowed_types'] = 'jpg|png|jpeg';
 			$data['max_size'] = '20480000';
 			$data['max_width'] = '10240000';
@@ -615,8 +615,8 @@ class Wb extends REST_Controller
 		$this->response($response	, 200); // 200 being the HTTP response code		
 	}
 	
-	//View Profile
-	function view_profile_post(){
+	//Edit OR View Profile
+	function edit_profile_post(){
 		$user_id 				= $this->post('user_id');
 		if($user_id=='')
 		{
@@ -664,8 +664,8 @@ class Wb extends REST_Controller
 		$this->response($response	, 200); // 200 being the HTTP response code		
 	}
 	
-	//Edit Profile
-	function edit_profile_post(){
+	//Update Profile
+	function update_profile_post(){
 		if($this->session->userdata('otp_no')!="")
 		{
 			$otp_no = $this->session->userdata('otp_no');
@@ -771,7 +771,7 @@ class Wb extends REST_Controller
 			&& $identification_no!='' && $identification_type!='' && $country!='' && $province!='' && $ac_holder_name!=''
 			&& $account_no_iban!='' && $bank_id!='' && $swift_code!='')
 		{
-			$data['upload_path'] = 'documents/';
+			$data['upload_path'] = 'uploads/user_documents/';
 			$data['allowed_types'] = 'gif|jpg|png';
 			$data['max_size'] = '20480000';
 			$data['max_width'] = '10240000';
@@ -784,6 +784,11 @@ class Wb extends REST_Controller
 			$user_doc = $user_doc_data->user_doc;
 			if ($this->upload->do_upload('document'))
 			{
+				if($user_doc!='')
+				{
+					$dir="uploads/user_documents/";
+					unlink($dir.'/'.$user_doc);
+				}
 				$attachment_data = array('upload_data' => $this->upload->data());
 				$user_doc = $attachment_data['upload_data']['file_name'];
 			}
@@ -897,6 +902,159 @@ class Wb extends REST_Controller
 		$this->response($response	, 200); // 200 being the HTTP response code		
 	}
 	
+	//GET ALL Users
+	function users_get(){       
+		$data = $this->wb_model->getAllwhere('ac_users',array('status !='=>'0'));
+		if(count($data)>0)
+		{
+			$final = array();
+			foreach($data as $d)
+			{
+				$final_data['user_id'] 					= $d->user_id;
+				$final_data['full_name'] 				= $d->full_name;
+				$final_data['email'] 					= $d->email;
+				$final_data['std'] 						= $d->std;
+				$final_data['mobile_no'] 				= $d->mobile_no;
+				$final_data['country'] 					= $d->country;
+				$final_data['province'] 				= $d->province;
+				$final_data['city'] 					= $d->city;
+				$final_data['identification_no'] 		= $d->identification_no;
+				$final_data['identification_type'] 		= $d->identification_type;
+				$final_data['district'] 				= $d->district;
+				$final_data['street'] 					= $d->street;
+				$final_data['ac_holder_name'] 			= $d->ac_holder_name;
+				$final_data['account_no_iban'] 			= $d->account_no_iban;
+				$final_data['bank_id'] 					= $d->bank_id;
+				$bank_data = $this->wb_model->getsingle('ac_banks',array('bank_id'=>$d->bank_id));
+				$final_data['bank_name'] 				= $bank_data->bank_name;
+				$final_data['swift_code'] 				= $d->swift_code;
+				if($d->user_doc!='')
+				{
+					$final_data['user_doc'] 			= base_url()."uploads/user_documents/".$d->user_doc;
+				}else{
+					$final_data['user_doc'] 			= $d->user_doc;
+				}
+				if($d->user_profile_pic!='')
+				{
+					$final_data['user_profile_pic'] 	= base_url()."uploads/profile_images/".$d->user_profile_pic;
+				}else{
+					$final_data['user_profile_pic'] 	= $d->user_profile_pic;
+				}				
+				if($d->status=='0')
+				{
+					$final_data['status'] 	= "Active";
+				}else{
+					$final_data['status'] 	= "Deactive";
+				}
+				$final_data['registration_date'] 		= $d->registration_date;
+				$final[] = $final_data;
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final );
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Activate User
+	function activate_user_post(){
+		$user_id 	= $this->post('user_id');		
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}		
+		if($user_id!='')
+		{
+			$updata = array(
+						'status' 	=> '0'
+				);
+			$this->wb_model->updateData('ac_users',$updata,array('user_id'=>$user_id));
+			$response= array('status'=>'200', 'message'=>'User Activated Successfully!', 'data'=>'');
+		}																				
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	//Deactivate User
+	function deactivate_user_post(){
+		$user_id 	= $this->post('user_id');		
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}		
+		if($user_id!='')
+		{
+			$updata = array(
+						'status' 	=> '1'
+				);
+			$this->wb_model->updateData('ac_users',$updata,array('user_id'=>$user_id));
+			$response= array('status'=>'200', 'message'=>'User Deactivated Successfully!', 'data'=>'');
+		}																				
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Upload Profile Image
+	function upload_profile_image_post(){		
+		$user_id 	= $this->post('user_id');
+		
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		if(empty($_FILES['files']['name']))
+		{
+			$response= array('status'=>'201', 'message'=>'Please Select file!', 'data'=>'');
+		}		
+		
+		if($user_id!='' && !empty($_FILES['files']['name']))
+		{
+			$data['upload_path'] = 'uploads/profile_images/';
+			$data['allowed_types'] = 'jpg|jpeg|png';
+			$data['max_size'] = '20480000';
+			$data['max_width'] = '10240000';
+			$data['max_height'] = '7680000';
+			$data['encrypt_name'] = false;
+
+			$this->load->library('upload', $data);
+			$errors="";
+			if ($this->upload->do_upload('files'))
+			{
+				$attachment_data = array('upload_data' => $this->upload->data());
+				$user_profile_pic = $attachment_data['upload_data']['file_name'];
+			}
+			else
+			{
+				if($_FILES['files']['name']!="")
+				{					
+					$errors = "Allowed upload type png, jpg and jpeg images only.";
+					$response= array('status'=>'201', 'message'=>$errors, 'data'=>'');
+				}else{
+					$errors="";
+				}
+				
+			}
+			
+			if($errors=="")
+			{
+				$user_data = $this->wb_model->getsingle('ac_users',array('user_id'=>$user_id));
+				if($user_data->user_profile_pic!='')
+				{
+					$dir="uploads/profile_images/";
+					unlink($dir.'/'.$user_data->user_profile_pic);
+				}
+				 
+				$updata = array(
+						'user_profile_pic' 			=> $user_profile_pic
+				);
+				$this->wb_model->updateData('ac_users',$updata,array('user_id'=>$user_id));
+				$response= array('status'=>'200', 'message'=>'Profile picture Upload Successfully!', 'data'=>'');
+			}
+		} 
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
 	//Add category
 	function add_category_post(){
 		
@@ -971,6 +1129,12 @@ class Wb extends REST_Controller
 				}else{
 					$final_data['icon'] 		= $d->icon;
 				}
+				if($d->status=='0')
+				{
+					$final_data['status'] 		= "Active";
+				}else{
+					$final_data['status'] 		= "Deactive";
+				}
 				
 				$final_data['entry_date'] 	= $d->entry_date;
 				$final[] = $final_data;
@@ -986,7 +1150,7 @@ class Wb extends REST_Controller
         $this->response($response	, 200); // 200 being the HTTP response code		
 	}
 	
-	//Edit Categories
+	//Edit Or View Categories
 	function edit_category_post(){
 		$category_id 	= $this->post('category_id');
 		if($category_id=='')
@@ -1086,9 +1250,46 @@ class Wb extends REST_Controller
 		$this->response($response	, 200); // 200 being the HTTP response code		
 	}
 	
+	//Activate Category
+	function activate_category_post(){
+		$category_id 	= $this->post('category_id');		
+		if($category_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'category_id input missing!', 'data'=>'');
+		}		
+		if($category_id!='')
+		{
+			$updata = array(
+						'status' 	=> '0'
+				);
+			$this->wb_model->updateData('ac_categories',$updata,array('category_id'=>$category_id));
+			$response= array('status'=>'200', 'message'=>'Category Activated Successfully!', 'data'=>'');
+		}																				
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Deactivate Category
+	function deactivate_category_post(){
+		$category_id 	= $this->post('category_id');		
+		if($category_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'category_id input missing!', 'data'=>'');
+		}		
+		if($category_id!='')
+		{
+			$updata = array(
+						'status' 	=> '1'
+				);
+			$this->wb_model->updateData('ac_categories',$updata,array('category_id'=>$category_id));
+			$response= array('status'=>'200', 'message'=>'Category Deactivated Successfully!', 'data'=>'');
+		}																				
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
 	//Add Product
 	function add_product_post(){		
 		
+		$user_id 				= $this->post('user_id');
 		$category_id 			= $this->post('category_id');
 		$product_name 			= $this->post('product_name');
 		$description 			= $this->post('description');
@@ -1096,6 +1297,10 @@ class Wb extends REST_Controller
 		$bid_start_date_time 	= $this->post('bid_start_date_time');
 		$bid_end_date_time 		= $this->post('bid_end_date_time');
 		
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
 		if($category_id=='')
 		{
 			$response= array('status'=>'201', 'message'=>'category_id input missing!', 'data'=>'');
@@ -1129,6 +1334,7 @@ class Wb extends REST_Controller
 		)
 		{
 			$insdata = array(
+						'user_id' 				=> $user_id,
 						'category_id' 			=> $category_id,
 						'product_name' 			=> $product_name,
 						'description' 			=> $description,
@@ -1148,13 +1354,22 @@ class Wb extends REST_Controller
 	//Add Product
 	function upload_document_post(){		
 		
-		$product_id 			= $this->post('product_id');
-		
+		$product_id 		= $this->post('product_id');
+		$user_id 			= $this->post('user_id');
+		$prod_user_data = $this->wb_model->getsingle('ac_products',array('user_id'=>$user_id,'product_id'=>$product_id));
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
 		if($product_id=='')
 		{
 			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
 		}
-		if($product_id!='' && !empty($_FILES['files']['name']))
+		if($user_id!='' && $product_id!='' && !$prod_user_data)
+		{
+			$response= array('status'=>'201', 'message'=>'user_id and product_id Not match!', 'data'=>'');
+		}
+		if($user_id!='' && $product_id!='' && $prod_user_data && !empty($_FILES['files']['name']))
 		{
             $filesCount = count($_FILES['files']['name']);
 			$error="1";
@@ -1209,13 +1424,22 @@ class Wb extends REST_Controller
 	//Add Product
 	function upload_images_post(){		
 		
-		$product_id 			= $this->post('product_id');
-		
+		$product_id 		= $this->post('product_id');
+		$user_id 			= $this->post('user_id');
+		$prod_user_data = $this->wb_model->getsingle('ac_products',array('user_id'=>$user_id,'product_id'=>$product_id));
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
 		if($product_id=='')
 		{
 			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
 		}
-		if($product_id!='' && !empty($_FILES['files']['name']))
+		if($user_id!='' && $product_id!='' && !$prod_user_data)
+		{
+			$response= array('status'=>'201', 'message'=>'user_id and product_id Not match!', 'data'=>'');
+		}
+		if($user_id!='' && $product_id!='' && $prod_user_data && !empty($_FILES['files']['name']))
 		{
             $filesCount = count($_FILES['files']['name']);
 			$error="1";
@@ -1269,10 +1493,68 @@ class Wb extends REST_Controller
 	
 	//GET ALL Products
 	function products_get(){       
-		$data = $this->wb_model->getAllwhere('ac_banks');
+		$data = $this->wb_model->getAllwhere('ac_products');
 		if(count($data)>0)
 		{
-			$response= array('status'=>'200', 'message'=>'success', 'data'=>$data );
+			$final_data = array();
+			foreach($data as $d)
+			{
+				$final['product_id'] 			= $d->product_id;
+				$final['user_id'] 				= $d->user_id;
+				$final['product_name'] 			= $d->product_name;
+				$final['category_id'] 			= $d->category_id;
+				$category_data = $this->wb_model->getsingle('ac_categories',array('category_id' => $d->category_id));		
+				$final['category_name'] 		= $category_data->name;
+				$final['description'] 			= $d->description;
+				$final['selling_price'] 		= $d->selling_price;
+				$final['bid_start_date_time'] 	= $d->bid_start_date_time;
+				$final['bid_end_date_time'] 	= $d->bid_end_date_time;
+				
+				//documents
+				$documents = $this->wb_model->getAllwhere('ac_product_documents',array('product_id' => $d->product_id));
+				if(count($documents)>0)
+				{
+					$final_document = array();
+					foreach($documents as $dc)
+					{
+						$doc['id'] 			= $dc->id;
+						$doc['document'] 	= base_url()."uploads/product_documents/".$dc->document;
+						$doc['upload_date'] = $dc->upload_date;
+						$final_document[] 	= $doc;
+					}
+				$final['documents'] 	= $final_document;		
+				}
+				else{
+				$final['documents'] 	= "";	
+				}
+				
+				//Images
+				$images = $this->wb_model->getAllwhere('ac_product_images',array('product_id' => $d->product_id));
+				if(count($images)>0)
+				{
+					$final_images = array();
+					foreach($images as $img)
+					{
+						$im['id'] 			= $img->id;
+						$im['image'] 		= base_url()."uploads/product_images/".$img->image;
+						$im['upload_date'] 	= $img->upload_date;
+						$final_images[] = $im;
+					}
+				$final['images'] 	= $final_images;		
+				}
+				else{
+				$final['images'] 	= "";	
+				}
+				if($d->status=='0')
+				{
+					$final['status'] 	= "Active";
+				}else{
+					$final['status'] 	= "Deactive";
+				}
+				$final['entry_date'] 	= $d->entry_date;
+				$final_data[] = $final;
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
 		}
 		else
 		{
