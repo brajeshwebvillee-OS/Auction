@@ -1563,6 +1563,299 @@ class Wb extends REST_Controller
 		
         $this->response($response	, 200); // 200 being the HTTP response code		
 	}
+	
+	//GET ALL Products By category
+	function products_by_category_post(){
+		$category_id 		= $this->post('category_id');
+		if($category_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'category_id input missing!', 'data'=>'');
+		}
+		$data = $this->wb_model->getAllwhere('ac_products',array('category_id'=>$category_id));
+		if(count($data)>0 && $category_id!='')
+		{
+			$final_data = array();
+			foreach($data as $d)
+			{
+				$final['product_id'] 			= $d->product_id;
+				$final['user_id'] 				= $d->user_id;
+				$final['product_name'] 			= $d->product_name;
+				$final['category_id'] 			= $d->category_id;
+				$category_data = $this->wb_model->getsingle('ac_categories',array('category_id' => $d->category_id));		
+				$final['category_name'] 		= $category_data->name;
+				$final['description'] 			= $d->description;
+				$final['selling_price'] 		= $d->selling_price;
+				$final['bid_start_date_time'] 	= $d->bid_start_date_time;
+				$final['bid_end_date_time'] 	= $d->bid_end_date_time;
+				
+				//documents
+				$documents = $this->wb_model->getAllwhere('ac_product_documents',array('product_id' => $d->product_id));
+				if(count($documents)>0)
+				{
+					$final_document = array();
+					foreach($documents as $dc)
+					{
+						$doc['id'] 			= $dc->id;
+						$doc['document'] 	= base_url()."uploads/product_documents/".$dc->document;
+						$doc['upload_date'] = $dc->upload_date;
+						$final_document[] 	= $doc;
+					}
+				$final['documents'] 	= $final_document;		
+				}
+				else{
+				$final['documents'] 	= "";	
+				}
+				
+				//Images
+				$images = $this->wb_model->getAllwhere('ac_product_images',array('product_id' => $d->product_id));
+				if(count($images)>0)
+				{
+					$final_images = array();
+					foreach($images as $img)
+					{
+						$im['id'] 			= $img->id;
+						$im['image'] 		= base_url()."uploads/product_images/".$img->image;
+						$im['upload_date'] 	= $img->upload_date;
+						$final_images[] = $im;
+					}
+				$final['images'] 	= $final_images;		
+				}
+				else{
+				$final['images'] 	= "";	
+				}
+				if($d->status=='0')
+				{
+					$final['status'] 	= "Active";
+				}else{
+					$final['status'] 	= "Deactive";
+				}
+				$final['entry_date'] 	= $d->entry_date;
+				$final_data[] = $final;
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	//GET ALL My Products
+	function my_products_post(){
+		$user_id 		= $this->post('user_id');
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		$data = $this->wb_model->getAllwhere('ac_products',array('user_id'=>$user_id));
+		if(count($data)>0 && $user_id!='')
+		{
+			$final_data = array();
+			foreach($data as $d)
+			{
+				$final['product_id'] 			= $d->product_id;
+				$final['user_id'] 				= $d->user_id;
+				$final['product_name'] 			= $d->product_name;
+				$final['category_id'] 			= $d->category_id;
+				$category_data = $this->wb_model->getsingle('ac_categories',array('category_id' => $d->category_id));		
+				$final['category_name'] 		= $category_data->name;
+				$final['description'] 			= $d->description;
+				$final['selling_price'] 		= $d->selling_price;
+				$final['bid_start_date_time'] 	= $d->bid_start_date_time;
+				$final['bid_end_date_time'] 	= $d->bid_end_date_time;
+				
+				//documents
+				$documents = $this->wb_model->getAllwhere('ac_product_documents',array('product_id' => $d->product_id));
+				if(count($documents)>0)
+				{
+					$final_document = array();
+					foreach($documents as $dc)
+					{
+						$doc['id'] 			= $dc->id;
+						$doc['document'] 	= base_url()."uploads/product_documents/".$dc->document;
+						$doc['upload_date'] = $dc->upload_date;
+						$final_document[] 	= $doc;
+					}
+				$final['documents'] 	= $final_document;		
+				}
+				else{
+				$final['documents'] 	= "";	
+				}
+				
+				//Images
+				$images = $this->wb_model->getAllwhere('ac_product_images',array('product_id' => $d->product_id));
+				if(count($images)>0)
+				{
+					$final_images = array();
+					foreach($images as $img)
+					{
+						$im['id'] 			= $img->id;
+						$im['image'] 		= base_url()."uploads/product_images/".$img->image;
+						$im['upload_date'] 	= $img->upload_date;
+						$final_images[] = $im;
+					}
+				$final['images'] 	= $final_images;		
+				}
+				else{
+				$final['images'] 	= "";	
+				}
+				if($d->status=='0')
+				{
+					$final['status'] 	= "Active";
+				}else{
+					$final['status'] 	= "Deactive";
+				}
+				$final['entry_date'] 	= $d->entry_date;
+				$final_data[] = $final;
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Activate Product
+	function activate_product_post(){
+		$product_id 		= $this->post('product_id');
+		$user_id 			= $this->post('user_id');
+		$prod_user_data = $this->wb_model->getsingle('ac_products',array('user_id'=>$user_id,'product_id'=>$product_id));
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		if($product_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+		}
+		if($user_id!='' && $product_id!='' && !$prod_user_data)
+		{
+			$response= array('status'=>'201', 'message'=>'user_id and product_id Not match!', 'data'=>'');
+		}	
+		if($user_id!='' && $product_id!='' && $prod_user_data)
+		{
+			$updata = array(
+						'status' 	=> '0'
+				);
+			$this->wb_model->updateData('ac_products',$updata,array('user_id'=>$user_id,'product_id'=>$product_id));
+			$response= array('status'=>'200', 'message'=>'Product Activated Successfully!', 'data'=>'');
+		}																				
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Deactivate Product
+	function deactivate_product_post(){
+		$product_id 		= $this->post('product_id');
+		$user_id 			= $this->post('user_id');
+		$prod_user_data = $this->wb_model->getsingle('ac_products',array('user_id'=>$user_id,'product_id'=>$product_id));
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		if($product_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+		}
+		if($user_id!='' && $product_id!='' && !$prod_user_data)
+		{
+			$response= array('status'=>'201', 'message'=>'user_id and product_id Not match!', 'data'=>'');
+		}	
+		if($user_id!='' && $product_id!='' && $prod_user_data)
+		{
+			$updata = array(
+						'status' 	=> '1'
+				);
+			$this->wb_model->updateData('ac_products',$updata,array('user_id'=>$user_id,'product_id'=>$product_id));
+			$response= array('status'=>'200', 'message'=>'Product Deactivated Successfully!', 'data'=>'');
+		}																				
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Delete Product
+	function delete_document_post(){		
+		
+		$product_id 		= $this->post('product_id');
+		$user_id 			= $this->post('user_id');
+		$document_id 		= $this->post('document_id');
+		$prod_user_data = $this->wb_model->getsingle('ac_products',array('user_id'=>$user_id,'product_id'=>$product_id));
+		$prod_doc_data = $this->wb_model->getsingle('ac_product_documents',array('id'=>$document_id,'product_id'=>$product_id));
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		if($product_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+		}
+		if($user_id!='' && $product_id!='' && !$prod_user_data)
+		{
+			$response= array('status'=>'201', 'message'=>'user_id and product_id Not match!', 'data'=>'');
+		}
+		if($document_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'document_id input missing!', 'data'=>'');
+		}
+		if($document_id!='' && $product_id!='' && !$prod_doc_data)
+		{
+			$response= array('status'=>'201', 'message'=>'document_id and product_id Not match!', 'data'=>'');
+		}
+		
+		if($user_id!='' && $product_id!='' && $document_id!='' && $prod_user_data && $prod_doc_data)
+		{
+            
+			$dir="uploads/product_documents/";
+			unlink($dir.'/'.$prod_doc_data->document);
+			$this->wb_model->deleteData('ac_product_documents',array('id'=>$document_id,'product_id'=>$product_id));	
+			$response= array('status'=>'200', 'message'=>'document Deleted Successfully!', 'data'=>'');
+		}			
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Delete Image
+	function delete_image_post(){		
+		
+		$product_id 		= $this->post('product_id');
+		$user_id 			= $this->post('user_id');
+		$image_id 			= $this->post('image_id');
+		$prod_user_data = $this->wb_model->getsingle('ac_products',array('user_id'=>$user_id,'product_id'=>$product_id));
+		$prod_img_data = $this->wb_model->getsingle('ac_product_images',array('id'=>$image_id,'product_id'=>$product_id));
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		if($product_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+		}
+		if($user_id!='' && $product_id!='' && !$prod_user_data)
+		{
+			$response= array('status'=>'201', 'message'=>'user_id and product_id Not match!', 'data'=>'');
+		}
+		if($image_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'image_id input missing!', 'data'=>'');
+		}
+		if($image_id!='' && $product_id!='' && !$prod_img_data)
+		{
+			$response= array('status'=>'201', 'message'=>'image_id and product_id Not match!', 'data'=>'');
+		}
+		
+		if($user_id!='' && $product_id!='' && $image_id!='' && $prod_user_data && $prod_img_data)
+		{
+          
+			$dir="uploads/product_images/";
+			unlink($dir.'/'.$prod_img_data->image);
+			$this->wb_model->deleteData('ac_product_images',array('id'=>$image_id,'product_id'=>$product_id));	
+			$response= array('status'=>'200', 'message'=>'Image Deleted Successfully!', 'data'=>'');
+		}			
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
 		
 
 }
