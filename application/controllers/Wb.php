@@ -24,7 +24,7 @@ class Wb extends REST_Controller
         parent::__construct();        
 		$this->load->model('wb_model');			
     }  	
-	
+/*----------------------------------------Bnak API----------------------------------------------*/	
 	//Add BANK
 	function add_bank_post(){
 		$bank_name 				= $this->post('bank_name');
@@ -163,7 +163,8 @@ class Wb extends REST_Controller
 		}																				
         $this->response($response	, 200); // 200 being the HTTP response code		
 	}
-	
+
+/*----------------------------------------Registration API----------------------------------------------*/	
 	//REGISTRATION API
 	function register_post(){
 		if($this->session->userdata('otp_no')!="")
@@ -466,7 +467,8 @@ class Wb extends REST_Controller
 		
 		$this->response($response	, 200); // 200 being the HTTP response code		
 	}
-	
+
+/*----------------------------------------Login API----------------------------------------------*/	
 	// LOGIN
 	function login_post(){
 		$email_mobile_no = $this->post('email_mobile_no');
@@ -1054,7 +1056,8 @@ class Wb extends REST_Controller
 		
 		$this->response($response	, 200); // 200 being the HTTP response code		
 	}
-	
+
+/*----------------------------------------Category API----------------------------------------------*/	
 	//Add category
 	function add_category_post(){
 		
@@ -1285,7 +1288,8 @@ class Wb extends REST_Controller
 		}																				
         $this->response($response	, 200); // 200 being the HTTP response code		
 	}
-	
+
+/*----------------------------------------Products API----------------------------------------------*/	
 	//Add Product
 	function add_product_post(){		
 		
@@ -1855,6 +1859,357 @@ class Wb extends REST_Controller
 		}			
 		
 		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+
+/*----------------------------------------favourite API----------------------------------------------*/	
+	//Add To favourite
+	function add_to_favourite_post(){		
+		
+		$product_id 		= $this->post('product_id');
+		$user_id 			= $this->post('user_id');
+		$favourites_data 	= $this->wb_model->getsingle('ac_favourites',array('user_id'=>$user_id,'product_id'=>$product_id));
+		$user_data 			= $this->wb_model->getsingle('ac_users',array('user_id'=>$user_id));
+		$product_data 		= $this->wb_model->getsingle('ac_products',array('product_id'=>$product_id));
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		else if($user_id!='' && !$user_data)
+		{
+			$response= array('status'=>'201', 'message'=>'user_id not exist!', 'data'=>'');
+		}
+		if($product_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+		}
+		else if($product_id!='' && !$product_data)
+		{
+			$response= array('status'=>'201', 'message'=>'product_id not exist!', 'data'=>'');
+		}
+		if($user_id!='' && $product_id!='' && $favourites_data)
+		{
+			$response= array('status'=>'201', 'message'=>'Already added favourite list!', 'data'=>'');
+		}
+		if($user_id!='' && $product_id!='' && !$favourites_data && $user_data && $product_data)
+		{
+			$insdata = array(
+				'product_id' 	=> $product_id,
+				'user_id' 		=> $user_id,						
+				'added_date'	=> date('Y-m-d')
+			);
+			$this->wb_model->insertData('ac_favourites',$insdata);
+			$response= array('status'=>'200', 'message'=>'Add To favourite list successfully!', 'data'=>'');
+			
+		}
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//GET ALL My favourite
+	function my_favourites_post(){
+		$user_id 		= $this->post('user_id');
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		$data = $this->wb_model->getAllwhere('ac_favourites',array('user_id'=>$user_id));
+		if(count($data)>0 && $user_id!='')
+		{
+			$final_data = array();
+			foreach($data as $d)
+			{
+				$final['product_id'] 			= $d->product_id;
+				$final['user_id'] 				= $d->user_id;
+				$product_data = $this->wb_model->getsingle('ac_products',array('product_id' => $d->product_id));		
+				$final['product_name'] 			= $product_data->product_name;
+				$final['category_id'] 			= $product_data->category_id;
+				$category_data = $this->wb_model->getsingle('ac_categories',array('category_id' => $product_data->category_id));		
+				$final['category_name'] 		= $category_data->name;
+				$final['description'] 			= $product_data->description;
+				$final['selling_price'] 		= $product_data->selling_price;
+				$final['bid_start_date_time'] 	= $product_data->bid_start_date_time;
+				$final['bid_end_date_time'] 	= $product_data->bid_end_date_time;
+				
+				//documents
+				$documents = $this->wb_model->getAllwhere('ac_product_documents',array('product_id' => $product_data->product_id));
+				if(count($documents)>0)
+				{
+					$final_document = array();
+					foreach($documents as $dc)
+					{
+						$doc['id'] 			= $dc->id;
+						$doc['document'] 	= base_url()."uploads/product_documents/".$dc->document;
+						$doc['upload_date'] = $dc->upload_date;
+						$final_document[] 	= $doc;
+					}
+				$final['documents'] 	= $final_document;		
+				}
+				else{
+				$final['documents'] 	= "";	
+				}
+				
+				//Images
+				$images = $this->wb_model->getAllwhere('ac_product_images',array('product_id' => $product_data->product_id));
+				if(count($images)>0)
+				{
+					$final_images = array();
+					foreach($images as $img)
+					{
+						$im['id'] 			= $img->id;
+						$im['image'] 		= base_url()."uploads/product_images/".$img->image;
+						$im['upload_date'] 	= $img->upload_date;
+						$final_images[] = $im;
+					}
+				$final['images'] 	= $final_images;		
+				}
+				else{
+				$final['images'] 	= "";	
+				}
+				if($d->status=='0')
+				{
+					$final['status'] 	= "Active";
+				}else{
+					$final['status'] 	= "Deactive";
+				}
+				$final['added_date'] 	= $d->added_date;
+				$final_data[] = $final;
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Remove To favourite
+	function remove_to_favourite_post(){		
+		
+		$product_id 		= $this->post('product_id');
+		$user_id 			= $this->post('user_id');
+		$favourites_data 	= $this->wb_model->getsingle('ac_favourites',array('user_id'=>$user_id,'product_id'=>$product_id));
+		$user_data 			= $this->wb_model->getsingle('ac_users',array('user_id'=>$user_id));
+		$product_data 		= $this->wb_model->getsingle('ac_products',array('product_id'=>$product_id));
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		else if($user_id!='' && !$user_data)
+		{
+			$response= array('status'=>'201', 'message'=>'user_id not exist!', 'data'=>'');
+		}
+		if($product_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+		}
+		else if($product_id!='' && !$product_data)
+		{
+			$response= array('status'=>'201', 'message'=>'product_id not exist!', 'data'=>'');
+		}
+		if($user_id!='' && $product_id!='' && !$favourites_data)
+		{
+			$response= array('status'=>'201', 'message'=>'product_id and user_id not exist favourite list!', 'data'=>'');
+		}
+		if($user_id!='' && $product_id!='' && $favourites_data && $user_data && $product_data)
+		{
+			$where = array(
+				'product_id' 	=> $product_id,
+				'user_id' 		=> $user_id
+			);
+			$this->wb_model->deleteData('ac_favourites',$where);
+			$response= array('status'=>'200', 'message'=>'Remove To favourite list successfully!', 'data'=>'');
+			
+		}
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+/*----------------------------------------Wallet API----------------------------------------------*/		
+	
+	//Add Amount To Wallet
+	function add_amount_by_bank_post(){
+		$errors						= "";		
+		$user_id 					= $this->post('user_id');
+		$amount 					= $this->post('amount');
+		$deposit_transaction_number = $this->post('deposit_transaction_number');
+		$deposit_date 				= $this->post('deposit_date');
+		
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}		
+		if($amount=='')
+		{
+			$response= array('status'=>'201', 'message'=>'amount input missing!', 'data'=>'');
+		}
+		if($deposit_transaction_number=='')
+		{
+			$response= array('status'=>'201', 'message'=>'deposit_transaction_number input missing!', 'data'=>'');
+		}
+		if($deposit_date=='')
+		{
+			$response= array('status'=>'201', 'message'=>'deposit_date input missing!', 'data'=>'');
+		}
+		
+		if($user_id!='' && $amount!='' && $deposit_transaction_number!='' && $deposit_date!='' )
+		{
+			$data['upload_path'] = 'wallet/';
+			$data['allowed_types'] = 'jpg|png|jpeg';
+			$data['max_size'] = '20480000';
+			$data['max_width'] = '10240000';
+			$data['max_height'] = '7680000';
+			$data['encrypt_name'] = false;
+
+			$this->load->library('upload', $data);
+			$payment_receipt = '';
+			if ($this->upload->do_upload('payment_receipt'))
+			{
+				$attachment_data = array('upload_data' => $this->upload->data());
+				$payment_receipt = $attachment_data['upload_data']['file_name'];
+			}
+			else
+			{
+				if($_FILES['payment_receipt']['name']!="")
+				{					
+					$errors = "Allowed upload type jpg, png and jpeg images only.";
+					$response= array('status'=>'201', 'message'=>$errors, 'data'=>'');
+				}else{
+					$errors="";
+				}
+				
+			}
+			
+			if($errors=="")
+			{				
+				$insdata = array(
+						'user_id' 						=> $user_id,
+						'amount'	 					=> $amount,
+						'payment_type'	 				=> 'Deposit',						
+						'payment_method' 				=> 'Bank_tranfer_deposit',
+						'deposit_transaction_number' 	=> $deposit_transaction_number,
+						'deposit_date' 					=> $deposit_date,
+						'payment_receipt'				=> $payment_receipt,
+						'entry_date' 					=> date('Y-m-d'),
+						'payment_status'				=> "Pending"
+				);
+				$this->wb_model->insertData('ac_wallet_details',$insdata);
+				$response= array('status'=>'200', 'message'=>'Payment Added successfully, wait for approval!', 'data'=>'');
+			}
+			
+		}		
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+		
+	}
+	
+	//Add Amount To Wallet by Pay Online
+	function add_amount_pay_online_post(){
+			
+		$user_id 			= $this->post('user_id');
+		$amount 			= $this->post('amount');
+		$card_number 		= $this->post('card_number');
+		$security_code 		= $this->post('security_code');
+		$expiration_date 	= $this->post('expiration_date');
+		
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}		
+		if($amount=='')
+		{
+			$response= array('status'=>'201', 'message'=>'amount input missing!', 'data'=>'');
+		}
+		if($card_number=='')
+		{
+			$response= array('status'=>'201', 'message'=>'card_number input missing!', 'data'=>'');
+		}
+		if($security_code=='')
+		{
+			$response= array('status'=>'201', 'message'=>'security_code input missing!', 'data'=>'');
+		}
+		if($expiration_date=='')
+		{
+			$response= array('status'=>'201', 'message'=>'expiration_date input missing!', 'data'=>'');
+		}
+		
+		if($user_id!='' && $amount!='' && $card_number!='' && $security_code!='' && $expiration_date!='' )
+		{							
+			$insdata = array(
+					'user_id' 						=> $user_id,
+					'amount'	 					=> $amount,
+					'payment_type'	 				=> 'Deposit',						
+					'payment_method' 				=> 'Pay_online',
+					'card_number' 					=> $card_number,
+					'security_code' 				=> $security_code,
+					'expiration_date'				=> $expiration_date,
+					'entry_date' 					=> date('Y-m-d'),
+					'payment_status'				=> "Approved"
+			);
+			$this->wb_model->insertData('ac_wallet_details',$insdata);
+			
+			$wallet_data = $this->wb_model->getsingle('ac_wallet',array('user_id'=>$user_id));
+			if($wallet_data)
+			{
+				$final_amount = $wallet_data->current_amount + $amount;
+				$this->wb_model->updateData('ac_wallet',array('current_amount'=>$final_amount),array('user_id'=>$user_id));
+			}else{
+				$this->wb_model->insertData('ac_wallet',array('user_id'=>$user_id,'current_amount'=>$amount));
+			}
+			
+			$response= array('status'=>'200', 'message'=>'Payment Added successfully!', 'data'=>'');
+			
+		}		
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+		
+	}
+	
+	//GET ALL Transactions
+	function transactions_get(){		
+		$data = $this->wb_model->getAllrecord('ac_wallet_details');
+		if(count($data)>0)
+		{
+			$final_data = array();
+			foreach($data as $d)
+			{				
+				$final['user_id'] 					= $d->user_id;
+				$users_data = $this->wb_model->getsingle('ac_users',array('user_id'=> $d->user_id));		
+				$final['full_name'] 				= $users_data->full_name;
+				$final['amount'] 					= $d->amount;
+				$final['payment_type'] 				= $d->payment_type;
+				$final['payment_method'] 			= $d->payment_method;
+				$final['deposit_transaction_number']= $d->deposit_transaction_number;
+				
+				if($d->deposit_date=='0000-00-00')
+				{
+					$final['deposit_date'] 			= "";
+				}
+				else
+				{
+					$final['deposit_date'] 			= $d->deposit_date;	
+				}
+				if($d->payment_receipt!='')
+				{
+					$final['payment_receipt'] 		= base_url()."uploads/wallet/".$dc->payment_receipt;
+				}
+				else
+				{
+					$final['payment_receipt'] 		= "";	
+				}
+				$final['entry_date'] 				= $d->entry_date;
+				$final['payment_status'] 			= $d->payment_status;
+				$final['created_date'] 				= $d->created_date;
+				$final_data[] = $final;
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
 	}
 		
 
