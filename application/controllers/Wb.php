@@ -2211,6 +2211,92 @@ class Wb extends REST_Controller
 		
         $this->response($response	, 200); // 200 being the HTTP response code		
 	}
+	//GET My ALL Transactions
+	function my_transactions_post(){
+		$user_id 			= $this->post('user_id');
+		$users_data = $this->wb_model->getsingle('ac_users',array('user_id'=> $user_id));		
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		else if(!$users_data)
+		{
+			$response= array('status'=>'201', 'message'=>'user_id not exist!', 'data'=>'');
+		}		
+		$data = $this->wb_model->getAllwhere('ac_wallet_details',array('user_id'=>$user_id));
+		if($user_id!='' && $users_data && count($data)>0)
+		{
+			$final_data = array();
+			foreach($data as $d)
+			{				
+				$final['user_id'] 					= $d->user_id;
+				$final['amount'] 					= $d->amount;
+				$final['payment_type'] 				= $d->payment_type;
+				$final['payment_method'] 			= $d->payment_method;
+				$final['deposit_transaction_number']= $d->deposit_transaction_number;
+				
+				if($d->deposit_date=='0000-00-00')
+				{
+					$final['deposit_date'] 			= "";
+				}
+				else
+				{
+					$final['deposit_date'] 			= $d->deposit_date;	
+				}
+				if($d->payment_receipt!='')
+				{
+					$final['payment_receipt'] 		= base_url()."uploads/wallet/".$dc->payment_receipt;
+				}
+				else
+				{
+					$final['payment_receipt'] 		= "";	
+				}
+				$final['entry_date'] 				= $d->entry_date;
+				$final['payment_status'] 			= $d->payment_status;
+				$final['created_date'] 				= $d->created_date;
+				$final_data[] = $final;
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	//GET My Balance
+	function my_wallet_balance_post(){
+		$user_id 			= $this->post('user_id');
+		$users_data = $this->wb_model->getsingle('ac_users',array('user_id'=> $user_id));		
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		else if(!$users_data)
+		{
+			$response= array('status'=>'201', 'message'=>'user_id not exist!', 'data'=>'');
+		}		
+		$data = $this->wb_model->getsingle('ac_wallet',array('user_id'=>$user_id));
+		if($user_id!='' && $users_data)
+		{
+			if($data)
+			{
+				$d['current_balance'] = $data->current_amount;
+			}
+			else
+			{
+				$d['current_balance'] = "0.00";
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$d);
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
 		
 
 }
