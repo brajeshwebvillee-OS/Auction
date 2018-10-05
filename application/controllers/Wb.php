@@ -2614,6 +2614,75 @@ class Wb extends REST_Controller
 		
         $this->response($response	, 200); // 200 being the HTTP response code		
 	}
+	
+	//No. Of Bids
+	function no_off_bids_post(){
+		
+		$product_id 		= $this->post('product_id');
+		$products_data 	= $this->wb_model->getsingle('ac_products',array('product_id'=> $product_id));		
+		if($product_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+		}
+		else if(!$products_data)
+		{
+			$response= array('status'=>'201', 'message'=>'product_id not exist!', 'data'=>'');
+		}
+		
+		$data = $this->wb_model->getAllwhere('ac_product_bids',array('product_id'=>$product_id));
+		if($product_id!='' && $products_data)
+		{
+			if(count($data)>0)
+			{
+				$bid = count($data);
+				$dd['product_id']= $product_id;
+				$dd['no_of_bids']= "$bid";
+			}
+			else
+			{
+				$dd['product_id']= $product_id;
+				$dd['no_of_bids']= "0";
+			}			
+			$response= array('status'=>'200', 'message'=>'', 'data'=>$dd);
+		}		
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Highest Bids
+	function heghest_bid_post(){
+		
+		$product_id 		= $this->post('product_id');
+		$products_data 	= $this->wb_model->getsingle('ac_products',array('product_id'=> $product_id));		
+		if($product_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+		}
+		else if(!$products_data)
+		{
+			$response= array('status'=>'201', 'message'=>'product_id not exist!', 'data'=>'');
+		}
+		
+		$highest_data = $this->wb_model->getsingle('ac_products',array('product_id'=>$product_id));
+		$data = $this->wb_model->getAllwhere('ac_product_bids',array('product_id'=>$product_id));
+		if($product_id!='' && $products_data)
+		{
+			if(count($data)>0)
+			{
+				$highest = $highest_data->current_bid_amount;
+				$dd['product_id']= $product_id;
+				$dd['highest_bid']= "$highest";
+			}
+			else
+			{
+				$dd['product_id']= $product_id;
+				$dd['highest_bid']= "0";
+			}			
+			$response= array('status'=>'200', 'message'=>'', 'data'=>$dd);
+		}		
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
 		
 
 }
