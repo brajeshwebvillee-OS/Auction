@@ -1343,6 +1343,7 @@ class Wb extends REST_Controller
 						'product_name' 			=> $product_name,
 						'description' 			=> $description,
 						'selling_price' 		=> $selling_price,
+						'current_bid_amount' 	=> $selling_price,
 						'bid_start_date_time' 	=> $bid_start_date_time,
 						'bid_end_date_time' 	=> $bid_end_date_time,
 						'entry_date'			=> date('Y-m-d')
@@ -2289,6 +2290,322 @@ class Wb extends REST_Controller
 				$d['current_balance'] = "0.00";
 			}			
 			$response= array('status'=>'200', 'message'=>'success', 'data'=>$d);
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//GET Past Products
+	function past_products_get(){       
+		$data = $this->wb_model->getAllwhere('ac_products',array('bid_end_date_time <'=>date('Y-m-d h:i:s')));
+		if(count($data)>0)
+		{
+			$final_data = array();
+			foreach($data as $d)
+			{
+				$final['product_id'] 			= $d->product_id;
+				$final['user_id'] 				= $d->user_id;
+				$final['product_name'] 			= $d->product_name;
+				$final['category_id'] 			= $d->category_id;
+				$category_data = $this->wb_model->getsingle('ac_categories',array('category_id' => $d->category_id));		
+				$final['category_name'] 		= $category_data->name;
+				$final['description'] 			= $d->description;
+				$final['selling_price'] 		= $d->selling_price;
+				$final['bid_start_date_time'] 	= $d->bid_start_date_time;
+				$final['bid_end_date_time'] 	= $d->bid_end_date_time;
+				
+				//documents
+				$documents = $this->wb_model->getAllwhere('ac_product_documents',array('product_id' => $d->product_id));
+				if(count($documents)>0)
+				{
+					$final_document = array();
+					foreach($documents as $dc)
+					{
+						$doc['id'] 			= $dc->id;
+						$doc['document'] 	= base_url()."uploads/product_documents/".$dc->document;
+						$doc['upload_date'] = $dc->upload_date;
+						$final_document[] 	= $doc;
+					}
+				$final['documents'] 	= $final_document;		
+				}
+				else{
+				$final['documents'] 	= "";	
+				}
+				
+				//Images
+				$images = $this->wb_model->getAllwhere('ac_product_images',array('product_id' => $d->product_id));
+				if(count($images)>0)
+				{
+					$final_images = array();
+					foreach($images as $img)
+					{
+						$im['id'] 			= $img->id;
+						$im['image'] 		= base_url()."uploads/product_images/".$img->image;
+						$im['upload_date'] 	= $img->upload_date;
+						$final_images[] = $im;
+					}
+				$final['images'] 	= $final_images;		
+				}
+				else{
+				$final['images'] 	= "";	
+				}
+				if($d->status=='0')
+				{
+					$final['status'] 	= "Active";
+				}else{
+					$final['status'] 	= "Deactive";
+				}
+				$final['entry_date'] 	= $d->entry_date;
+				$final_data[] = $final;
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//GET Future Products
+	function future_products_get(){       
+		$data = $this->wb_model->getAllwhere('ac_products',array('bid_start_date_time >'=>date('Y-m-d h:i:s')));
+		if(count($data)>0)
+		{
+			$final_data = array();
+			foreach($data as $d)
+			{
+				$final['product_id'] 			= $d->product_id;
+				$final['user_id'] 				= $d->user_id;
+				$final['product_name'] 			= $d->product_name;
+				$final['category_id'] 			= $d->category_id;
+				$category_data = $this->wb_model->getsingle('ac_categories',array('category_id' => $d->category_id));		
+				$final['category_name'] 		= $category_data->name;
+				$final['description'] 			= $d->description;
+				$final['selling_price'] 		= $d->selling_price;
+				$final['bid_start_date_time'] 	= $d->bid_start_date_time;
+				$final['bid_end_date_time'] 	= $d->bid_end_date_time;
+				
+				//documents
+				$documents = $this->wb_model->getAllwhere('ac_product_documents',array('product_id' => $d->product_id));
+				if(count($documents)>0)
+				{
+					$final_document = array();
+					foreach($documents as $dc)
+					{
+						$doc['id'] 			= $dc->id;
+						$doc['document'] 	= base_url()."uploads/product_documents/".$dc->document;
+						$doc['upload_date'] = $dc->upload_date;
+						$final_document[] 	= $doc;
+					}
+				$final['documents'] 	= $final_document;		
+				}
+				else{
+				$final['documents'] 	= "";	
+				}
+				
+				//Images
+				$images = $this->wb_model->getAllwhere('ac_product_images',array('product_id' => $d->product_id));
+				if(count($images)>0)
+				{
+					$final_images = array();
+					foreach($images as $img)
+					{
+						$im['id'] 			= $img->id;
+						$im['image'] 		= base_url()."uploads/product_images/".$img->image;
+						$im['upload_date'] 	= $img->upload_date;
+						$final_images[] = $im;
+					}
+				$final['images'] 	= $final_images;		
+				}
+				else{
+				$final['images'] 	= "";	
+				}
+				if($d->status=='0')
+				{
+					$final['status'] 	= "Active";
+				}else{
+					$final['status'] 	= "Deactive";
+				}
+				$final['entry_date'] 	= $d->entry_date;
+				$final_data[] = $final;
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//GET Current Products
+	function current_products_get(){       
+		$data = $this->wb_model->getAllwhere('ac_products',array('bid_start_date_time <='=>date('Y-m-d h:i:s'),'bid_end_date_time >='=>date('Y-m-d h:i:s')));
+		if(count($data)>0)
+		{
+			$final_data = array();
+			foreach($data as $d)
+			{
+				$final['product_id'] 			= $d->product_id;
+				$final['user_id'] 				= $d->user_id;
+				$final['product_name'] 			= $d->product_name;
+				$final['category_id'] 			= $d->category_id;
+				$category_data = $this->wb_model->getsingle('ac_categories',array('category_id' => $d->category_id));		
+				$final['category_name'] 		= $category_data->name;
+				$final['description'] 			= $d->description;
+				$final['selling_price'] 		= $d->selling_price;
+				$final['bid_start_date_time'] 	= $d->bid_start_date_time;
+				$final['bid_end_date_time'] 	= $d->bid_end_date_time;
+				
+				//documents
+				$documents = $this->wb_model->getAllwhere('ac_product_documents',array('product_id' => $d->product_id));
+				if(count($documents)>0)
+				{
+					$final_document = array();
+					foreach($documents as $dc)
+					{
+						$doc['id'] 			= $dc->id;
+						$doc['document'] 	= base_url()."uploads/product_documents/".$dc->document;
+						$doc['upload_date'] = $dc->upload_date;
+						$final_document[] 	= $doc;
+					}
+				$final['documents'] 	= $final_document;		
+				}
+				else{
+				$final['documents'] 	= "";	
+				}
+				
+				//Images
+				$images = $this->wb_model->getAllwhere('ac_product_images',array('product_id' => $d->product_id));
+				if(count($images)>0)
+				{
+					$final_images = array();
+					foreach($images as $img)
+					{
+						$im['id'] 			= $img->id;
+						$im['image'] 		= base_url()."uploads/product_images/".$img->image;
+						$im['upload_date'] 	= $img->upload_date;
+						$final_images[] = $im;
+					}
+				$final['images'] 	= $final_images;		
+				}
+				else{
+				$final['images'] 	= "";	
+				}
+				if($d->status=='0')
+				{
+					$final['status'] 	= "Active";
+				}else{
+					$final['status'] 	= "Deactive";
+				}
+				$final['entry_date'] 	= $d->entry_date;
+				$final_data[] = $final;
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Place Bid
+	function place_bid_post(){
+		$user_id 			= $this->post('user_id');
+		$product_id 		= $this->post('product_id');
+		$bid_amount 		= $this->post('bid_amount');
+		
+		$users_data 	= $this->wb_model->getsingle('ac_users',array('user_id'=> $user_id));
+		$products_data 	= $this->wb_model->getsingle('ac_products',array('product_id'=> $product_id));
+		
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		else if(!$users_data)
+		{
+			$response= array('status'=>'201', 'message'=>'user_id not exist!', 'data'=>'');
+		}
+		if($product_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+		}
+		else if(!$products_data)
+		{
+			$response= array('status'=>'201', 'message'=>'product_id not exist!', 'data'=>'');
+		}
+		if($bid_amount=='')
+		{
+			$response= array('status'=>'201', 'message'=>'bid_amount input missing!', 'data'=>'');
+		}
+		else if($products_data && $products_data->current_bid_amount >= $bid_amount)
+		{
+			$response= array('status'=>'201', 'message'=>'bid_amount graterthen current bid amount!', 'data'=>'');
+		}
+		
+		$data = $this->wb_model->getsingle('ac_wallet',array('user_id'=>$user_id));
+		if($user_id!='' && $users_data && $product_id!='' && $products_data && $products_data->current_bid_amount < $bid_amount)
+		{
+			$ins_data = array(
+					'user_id'		=> $user_id,
+					'product_id'	=> $product_id,
+					'bid_amount'	=> $bid_amount,
+					'bid_date'		=> date('Y-m-d')
+					);
+			$this->wb_model->insertData('ac_product_bids',$ins_data);
+		
+			//Update Bid amount
+			$this->wb_model->updateData('ac_products',array('current_bid_amount'=> $bid_amount),array('product_id'=> $product_id));
+					
+			$response= array('status'=>'200', 'message'=>'your bid placed successfully', 'data'=>'');
+		}		
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//GET Current Products
+	function all_bids_get(){       
+		$data = $this->wb_model->getAllwhere('ac_products');
+		if(count($data)>0)
+		{
+			$final_data = array();
+			foreach($data as $d)
+			{
+				$final['product_id'] 			= $d->product_id;				
+				$final['product_name'] 			= $d->product_name;
+				$final['category_id'] 			= $d->category_id;
+				$category_data = $this->wb_model->getsingle('ac_categories',array('category_id' => $d->category_id));		
+				$final['category_name'] 		= $category_data->name;
+				
+				//bids
+				$documents = $this->wb_model->getAllwhere('ac_product_bids',array('product_id' => $d->product_id));
+				if(count($documents)>0)
+				{
+					$final_bids = array();
+					foreach($documents as $dc)
+					{
+						$bd['bid_amount'] 	= $dc->bid_amount;
+						$bd['bid_date'] 	= $dc->bid_date;
+						$bd['bider_id'] 	= $dc->user_id;
+						$final_bids[] 		= $bd;
+					}
+				$final['bids'] 	= $final_bids;		
+				}
+				else{
+				$final['bids'] 	= "";	
+				}
+				$final_data[] = $final;
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
 		}
 		else
 		{
