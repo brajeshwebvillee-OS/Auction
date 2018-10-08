@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 05, 2018 at 12:44 PM
+-- Generation Time: Oct 08, 2018 at 11:05 AM
 -- Server version: 10.1.32-MariaDB
 -- PHP Version: 5.6.36
 
@@ -325,6 +325,28 @@ INSERT INTO `ac_wallet_details` (`id`, `user_id`, `amount`, `payment_type`, `pay
 (13, 4, '1500.00', 'Deposit', 'Pay_online', '', '0000-00-00', '', '12365852', '546', '06-2025', '2018-10-01', 'Approved', '2018-10-01 07:43:51'),
 (14, 3, '2500.00', 'Deposit', 'Bank_tranfer_deposit', '12365852', '2018-09-25', '', '', '', '', '2018-10-01', 'Pending', '2018-10-01 08:00:58');
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ac_watch_list`
+--
+
+CREATE TABLE `ac_watch_list` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `product_id` int(11) NOT NULL,
+  `watch_date` date NOT NULL,
+  `created_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `ac_watch_list`
+--
+
+INSERT INTO `ac_watch_list` (`id`, `user_id`, `product_id`, `watch_date`, `created_date`) VALUES
+(1, 2, 1, '2018-10-08', '2018-10-08 07:35:58'),
+(2, 2, 2, '2018-10-08', '2018-10-08 07:36:11');
+
 --
 -- Indexes for dumped tables
 --
@@ -396,6 +418,12 @@ ALTER TABLE `ac_wallet_details`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `ac_watch_list`
+--
+ALTER TABLE `ac_watch_list`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -421,7 +449,7 @@ ALTER TABLE `ac_favourites`
 -- AUTO_INCREMENT for table `ac_products`
 --
 ALTER TABLE `ac_products`
-  MODIFY `product_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `product_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `ac_product_bids`
@@ -464,6 +492,12 @@ ALTER TABLE `ac_wallet`
 --
 ALTER TABLE `ac_wallet_details`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT for table `ac_watch_list`
+--
+ALTER TABLE `ac_watch_list`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

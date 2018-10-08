@@ -2683,7 +2683,305 @@ class Wb extends REST_Controller
 		
         $this->response($response	, 200); // 200 being the HTTP response code		
 	}
+	
+	//GET Single Product Page
+	function single_product_post(){
+		$product_id 		= $this->post('product_id');
+		$products_data 	= $this->wb_model->getsingle('ac_products',array('product_id'=> $product_id));		
+		if($product_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+		}
+		else if(!$products_data)
+		{
+			$response= array('status'=>'201', 'message'=>'product_id not exist!', 'data'=>'');
+		}
 		
+		if($products_data && $product_id!='')
+		{
+			$d = $products_data;
+			$final_data = array();
+			
+				$final['product_id'] 			= $d->product_id;
+				$final['user_id'] 				= $d->user_id;
+				$final['product_name'] 			= $d->product_name;
+				$final['category_id'] 			= $d->category_id;
+				$category_data = $this->wb_model->getsingle('ac_categories',array('category_id' => $d->category_id));		
+				$final['category_name'] 		= $category_data->name;
+				$final['description'] 			= $d->description;
+				$final['selling_price'] 		= $d->selling_price;
+				$final['current_bid_amount']    = $d->current_bid_amount;
+				$final['bid_start_date_time'] 	= $d->bid_start_date_time;
+				$final['bid_end_date_time'] 	= $d->bid_end_date_time;
+				
+				//documents
+				$documents = $this->wb_model->getAllwhere('ac_product_documents',array('product_id' => $d->product_id));
+				if(count($documents)>0)
+				{
+					$final_document = array();
+					foreach($documents as $dc)
+					{
+						$doc['id'] 			= $dc->id;
+						$doc['document'] 	= base_url()."uploads/product_documents/".$dc->document;
+						$doc['upload_date'] = $dc->upload_date;
+						$final_document[] 	= $doc;
+					}
+				$final['documents'] 	= $final_document;		
+				}
+				else{
+				$final['documents'] 	= "";	
+				}
+				
+				//Images
+				$images = $this->wb_model->getAllwhere('ac_product_images',array('product_id' => $d->product_id));
+				if(count($images)>0)
+				{
+					$final_images = array();
+					foreach($images as $img)
+					{
+						$im['id'] 			= $img->id;
+						$im['image'] 		= base_url()."uploads/product_images/".$img->image;
+						$im['upload_date'] 	= $img->upload_date;
+						$final_images[] = $im;
+					}
+				$final['images'] 	= $final_images;		
+				}
+				else{
+				$final['images'] 	= "";	
+				}
+				if($d->status=='0')
+				{
+					$final['status'] 	= "Active";
+				}else{
+					$final['status'] 	= "Deactive";
+				}
+				$final['entry_date'] 	= $d->entry_date;
+				$final_data[] = $final;
+						
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//GET my all bids
+	function my_bids_post(){
+		$user_id 		= $this->post('user_id');
+		$bids_datas 	= $this->wb_model->my_bids($user_id);		
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		if(count($bids_datas)>0 && $user_id!='')
+		{
+			$final_data = array();
+			foreach($bids_datas as $d)
+			{
+				$final['id'] 			= $d['id'];
+				$final['user_id'] 		= $d['user_id'];
+				$final['product_id'] 	= $d['product_id'];				
+				$prod_data = $this->wb_model->getsingle('ac_products',array('product_id' => $d['product_id']));		
+				$final['product_name'] 	= $prod_data->product_name;
+				if($prod_data->status=='0')
+				{
+					$final['status'] 	= "Active";
+				}else{
+					$final['status'] 	= "Deactive";
+				}
+				$bids_data = $this->wb_model->getAllwhere('ac_product_bids',array('product_id' => $d['product_id'] , 'user_id' => $d['user_id']));		
+				if(count($bids_data)>0)
+				{
+					$final_bids = array();
+					foreach($bids_data as $b)
+					{
+						$bb['id'] 			= $b->id;
+						$bb['bid_amount'] 	= $b->bid_amount;
+						$bb['bid_date'] 	= $b->bid_date;
+						$final_bids[] = $bb;
+					}
+				$final['bids'] 	= $final_bids;		
+				}
+				else{
+				$final['bids'] 	= "";	
+				}
+				
+				$final_data[] = $final;
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
+		}else{
+			$response= array('status'=>'201', 'message'=>'you are not bid any products!', 'data'=>'');
+		}
+		
+		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Add Watch List
+	function add_watch_list_post(){
+		$user_id 		= $this->post('user_id');
+		$product_id 	= $this->post('product_id');
+		
+		$users_data 	= $this->wb_model->getsingle('ac_users',array('user_id'=> $user_id));
+		$products_data 	= $this->wb_model->getsingle('ac_products',array('product_id'=> $product_id));
+		
+		$exist_watch_list = $this->wb_model->getsingle('ac_watch_list',array('product_id' => $product_id,'user_id' => $user_id));		
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		else if(!$users_data)
+		{
+			$response= array('status'=>'201', 'message'=>'user_id not exist!', 'data'=>'');
+		}
+		if($product_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+		}
+		else if(!$products_data)
+		{
+			$response= array('status'=>'201', 'message'=>'product_id not exist!', 'data'=>'');
+		}
+		if($user_id!='' && $product_id!='' && $exist_watch_list)
+		{
+			$response= array('status'=>'201', 'message'=>'this product Watch list Already Exists!', 'data'=>'');
+		}
+		if($user_id!='' && $product_id!='' && !$exist_watch_list && $users_data && $products_data)
+		{
+			$insdata = array(
+						'user_id' 		=> $user_id,
+						'product_id' 	=> $product_id,						
+						'watch_date'	=> date('Y-m-d')
+				);
+			$this->wb_model->insertData('ac_watch_list',$insdata);
+			$response= array('status'=>'200', 'message'=>'Product Watch list added Successfully!', 'data'=>'');
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Remove Watch List
+	function remove_watch_list_post(){
+		$user_id 		= $this->post('user_id');
+		$product_id 	= $this->post('product_id');
+		
+		$users_data 	= $this->wb_model->getsingle('ac_users',array('user_id'=> $user_id));
+		$products_data 	= $this->wb_model->getsingle('ac_products',array('product_id'=> $product_id));
+		
+		$exist_watch_list = $this->wb_model->getsingle('ac_watch_list',array('product_id' => $product_id,'user_id' => $user_id));		
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		else if(!$users_data)
+		{
+			$response= array('status'=>'201', 'message'=>'user_id not exist!', 'data'=>'');
+		}
+		if($product_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+		}
+		else if(!$products_data)
+		{
+			$response= array('status'=>'201', 'message'=>'product_id not exist!', 'data'=>'');
+		}
+		if($user_id!='' && $product_id!='' && !$exist_watch_list)
+		{
+			$response= array('status'=>'201', 'message'=>'this product Watch list Not Exists!', 'data'=>'');
+		}
+		if($user_id!='' && $product_id!='' && $exist_watch_list && $users_data && $products_data)
+		{
+			$deldata = array(
+						'user_id' 		=> $user_id,
+						'product_id' 	=> $product_id
+				);
+			$this->wb_model->deleteData('ac_watch_list',$deldata);
+			$response= array('status'=>'200', 'message'=>'Product Watch list removed Successfully!', 'data'=>'');
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//GET watch List
+	function watch_list_get(){       
+		$data = $this->wb_model->getAllwhere('ac_watch_list');
+		if(count($data)>0)
+		{
+			$final_data = array();
+			foreach($data as $d)
+			{
+				$prod_data = $this->wb_model->getsingle('ac_products',array('product_id' => $d->product_id));		
+				$user_data = $this->wb_model->getsingle('ac_users',array('user_id' => $d->user_id));		
+				$final['product_id'] 			= $prod_data->product_id;
+				$final['user_id'] 				= $user_data->user_id;				
+				$final['product_name'] 			= $prod_data->product_name;
+				$final['user_name'] 			= $user_data->full_name;
+				if($prod_data->status=='0')
+				{
+					$final['status'] 	= "Active";
+				}else{
+					$final['status'] 	= "Deactive";
+				}
+				$final['watch_date'] 	= $d->watch_date;
+				$final_data[] = $final;
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//My watch List
+	function my_watch_list_post(){ 
+		$user_id 		= $this->post('user_id');
+		$users_data 	= $this->wb_model->getsingle('ac_users',array('user_id'=> $user_id));
+		if($user_id=='')
+		{
+			$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+		}
+		else if(!$users_data)
+		{
+			$response= array('status'=>'201', 'message'=>'user_id not exist!', 'data'=>'');
+		}
+		if($user_id!='' && $users_data )
+		{
+			$data = $this->wb_model->getAllwhere('ac_watch_list',array('user_id' => $user_id));
+			if(count($data)>0)
+			{
+				$final_data = array();
+				foreach($data as $d)
+				{
+					$prod_data = $this->wb_model->getsingle('ac_products',array('product_id' => $d->product_id));							
+					$final['product_id'] 			= $prod_data->product_id;								
+					$final['product_name'] 			= $prod_data->product_name;
+					
+					if($prod_data->status=='0')
+					{
+						$final['status'] 	= "Active";
+					}else{
+						$final['status'] 	= "Deactive";
+					}
+					$final['watch_date'] 	= $d->watch_date;
+					$final_data[] = $final;
+				}			
+				$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
+			}
+			else
+			{
+				$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+			}
+		}
+		
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
 
 }
 	
