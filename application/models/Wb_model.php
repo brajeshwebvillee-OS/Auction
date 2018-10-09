@@ -79,5 +79,29 @@ class WB_model extends CI_Model
 		} 
         
     }
+	function get_winner_details_by_product($product_id)
+    {
+		$this->db->select_max('bid_amount');       	
+		$this->db->where('product_id',$product_id);			
+		$this->db->from('ac_product_bids');		
+		$q = $this->db->get();
+		if ($q->num_rows() > 0)
+		{
+		  return $q->result();
+		}         
+    }
+	function my_bids_product($user_id)
+    {
+        $this->db->select('bids.*');	
+		$this->db->where('user_id',$user_id);			
+		$this->db->from('ac_product_bids as bids');		
+		$this->db->group_by(array('bids.product_id','bids.user_id'));
+		$q = $this->db->get();
+		if ($q->num_rows() > 0)
+		{
+		  return $q->result();
+		} 
+        
+    }
 		
 }
