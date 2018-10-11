@@ -59,6 +59,22 @@ class WB_model extends CI_Model
         }
     }
 	
+	  /*---GET MULTIPLE RECORD---*/
+    function getAllwhere_order($table, $where ,$order_by_id,$order_by_type)
+    {
+        $this->db->select('*');
+		$this->db->order_by($order_by_id,$order_by_type);
+        $q = $this->db->get_where($table, $where);
+        $num_rows = $q->num_rows();
+        if ($num_rows > 0) {
+            foreach ($q->result() as $rows) {
+                $data[] = $rows;
+            }
+            $q->free_result();
+            return $data;
+        }
+    }
+	
 	function login($email_mobile_no, $password)
     {
 		$q = $this->db->query("SELECT user_id,full_name,email,std,mobile_no,registration_date,crated_date FROM ac_users where ( email = '".$email_mobile_no."' or mobile_no ='".$email_mobile_no."' ) AND password = '".md5($password)."' ");

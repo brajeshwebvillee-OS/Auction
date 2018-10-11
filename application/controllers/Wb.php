@@ -212,9 +212,11 @@ class Wb extends REST_Controller
 			$otp_no = "123456";//$otp_n;
 		}
 		
-		$errors					= "";
+		$errors1				= "";
+		$errors2				= "";
 		$otp 					= "";
 		$full_name 				= $this->post('full_name');
+		$dob 					= date('Y-m-d',strtotime($this->post('dob')));
 		$email 					= $this->post('email');
 		$std 					= $this->post('std');
 		$mobile_no 				= $this->post('mobile_no');
@@ -230,13 +232,16 @@ class Wb extends REST_Controller
 		$bank_id 				= $this->post('bank_id');
 		$swift_code 			= $this->post('swift_code');
 		$password 				= $this->post('password');
-		$confirm_password 		= $this->post('confirm_password');
 		
 		
 		if($full_name=='')
 		{
 			$response= array('status'=>'201', 'message'=>'full_name input missing!', 'data'=>'');
-		}		
+		}
+		if($dob=='')
+		{
+			$response= array('status'=>'201', 'message'=>'dob input missing!', 'data'=>'');
+		}
 		$exist_email = $this->wb_model->getsingle('ac_users',array('email' => $email));
 		$regex = '/^[^0-9][_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,3})$/';
 		if($email=='')
@@ -300,24 +305,24 @@ class Wb extends REST_Controller
 		{
 			$response= array('status'=>'201', 'message'=>'password input missing!', 'data'=>'');
 		}
-		else if(strlen($password)<8)
+		else if(strlen($password)<6)
 		{
-			$response= array('status'=>'201', 'message'=>'Password must be minimum 8 characters long!', 'data'=>'');
+			$response= array('status'=>'201', 'message'=>'Password must be minimum 6 characters long!', 'data'=>'');
 		}
-		if($confirm_password=='')
+		if(empty($_FILES['profile_pic']['name']))
 		{
-			$response= array('status'=>'201', 'message'=>'confirm_password input missing!', 'data'=>'');
+			$response= array('status'=>'201', 'message'=>'Profile Pic missing!', 'data'=>'');
 		}
-		if($confirm_password!=$password && $confirm_password!='' && $password!='' )
+		if(empty($_FILES['document']['name']))
 		{
-			$response= array('status'=>'201', 'message'=>'confirm_password and password not match!', 'data'=>'');
+			$response= array('status'=>'201', 'message'=>'Document missing!', 'data'=>'');
 		}
-		
-		if($full_name!='' && $email!='' && preg_match($regex, $email) && !$exist_email && $std!='' && $mobile_no!='' && !$exist_mobile_no 
+			
+		if($full_name!='' && $dob!='' && $email!='' && preg_match($regex, $email) && !$exist_email && $std!='' && $mobile_no!='' && !$exist_mobile_no 
 			&& $identification_no!='' && $identification_type!='' && $country!='' && $province!='' && $ac_holder_name!=''
-			&& $account_no_iban!='' && $bank_id!='' && $swift_code!='' && $password!='' && $confirm_password!='' 
-			&& $confirm_password == $password && strlen($password)>8 )
-		{
+			&& $account_no_iban!='' && $bank_id!='' && $swift_code!='' && $password!=''	&& strlen($password)>5 && !empty($_FILES['profile_pic']['name'])
+			&& !empty($_FILES['document']['name']) )
+			{ 
 			$data['upload_path'] = 'uploads/user_documents/';
 			$data['allowed_types'] = 'jpg|png|jpeg';
 			$data['max_size'] = '20480000';
@@ -326,7 +331,7 @@ class Wb extends REST_Controller
 			$data['encrypt_name'] = false;
 
 			$this->load->library('upload', $data);
-			$user_doc = '';
+			$user_doc = '';			
 			if ($this->upload->do_upload('document'))
 			{
 				$attachment_data = array('upload_data' => $this->upload->data());
@@ -336,18 +341,45 @@ class Wb extends REST_Controller
 			{
 				if($_FILES['document']['name']!="")
 				{					
-					$errors = "Allowed upload type jpg, png and jpeg images only.";
-					$response= array('status'=>'201', 'message'=>$errors, 'data'=>'');
+					$errors1 = "Document Allowed upload type jpg, png and jpeg images only.";
+					$response= array('status'=>'201', 'message'=>$errors1, 'data'=>'');
 				}else{
-					$errors="";
+					$errors1="";
 				}
 				
 			}
 			
-			if($errors=="")
+			$data['upload_path'] = 'uploads/profile_images/';
+			$data['allowed_types'] = 'jpg|jpeg|png';
+			$data['max_size'] = '20480000';
+			$data['max_width'] = '10240000';
+			$data['max_height'] = '7680000';
+			$data['encrypt_name'] = false;
+
+			$this->load->library('upload', $data);			
+			$user_profile_pic="";
+			if ($this->upload->do_upload('profile_pic'))
+			{
+				$attachment_data = array('upload_data' => $this->upload->data());
+				$user_profile_pic = $attachment_data['upload_data']['file_name'];
+			}
+			else
+			{
+				if($_FILES['profile_pic']['name']!="")
+				{					
+					$errors2 = "Allowed upload type png, jpg and jpeg images only.";
+					$response= array('status'=>'201', 'message'=>$errors2, 'data'=>'');
+				}else{
+					$errors2="";
+				}
+				
+			}
+			
+			if($errors1=="" && $errors2=="")
 			{				
 				$insdata = array(
 						'full_name' 			=> $full_name,
+						'dob' 					=> $dob,
 						'email'	 				=> $email,
 						'std'	 				=> $std,						
 						'mobile_no' 			=> $mobile_no,
@@ -364,6 +396,7 @@ class Wb extends REST_Controller
 						'swift_code'			=> $swift_code,
 						'password'				=> $password,
 						'user_doc'				=> $user_doc,
+						'user_profile_pic' 		=> $user_profile_pic,
 						'registration_date' 	=> date('Y-m-d'),
 						'otp_no'				=> $otp_no
 				);
@@ -395,8 +428,27 @@ class Wb extends REST_Controller
 		}
 		if($otp!='' && $this->session->userdata('otp_no')!='' && $otp==$this->session->userdata('otp_no'))
 		{
+			if($this->session->userdata('city')!='')
+			{
+				$city = $this->session->userdata('city');
+			}else{
+				$city ="";
+			}
+			if($this->session->userdata('district')!='')
+			{
+				$district = $this->session->userdata('district');
+			}else{
+				$district ="";
+			}
+			if($this->session->userdata('street')!='')
+			{
+				$street = $this->session->userdata('street');
+			}else{
+				$street ="";
+			}	
 			$insdata = array(
 						'full_name' 			=> $this->session->userdata('full_name'),
+						'dob'	 				=> $this->session->userdata('dob'),	
 						'email'	 				=> $this->session->userdata('email'),
 						'std'	 				=> $this->session->userdata('std'),						
 						'mobile_no' 			=> $this->session->userdata('mobile_no'),
@@ -404,22 +456,24 @@ class Wb extends REST_Controller
 						'identification_type' 	=> $this->session->userdata('identification_type'),
 						'country'				=> $this->session->userdata('country'),
 						'province'				=> $this->session->userdata('province'),
-						'city'					=> $this->session->userdata('city'),
-						'district'				=> $this->session->userdata('district'),
-						'street'				=> $this->session->userdata('street'),
+						'city'					=> $city,
+						'district'				=> $district,
+						'street'				=> $street,
 						'ac_holder_name'		=> $this->session->userdata('ac_holder_name'),
 						'account_no_iban'		=> $this->session->userdata('account_no_iban'),
 						'bank_id'				=> $this->session->userdata('bank_id'),
 						'swift_code'			=> $this->session->userdata('swift_code'),
 						'password'				=> md5($this->session->userdata('password')),
 						'user_doc'				=> $this->session->userdata('user_doc'),
+						'user_profile_pic' 		=> $this->session->userdata('user_profile_pic'),
 						'registration_date' 	=> $this->session->userdata('registration_date')						
 				);
-			$this->wb_model->insertData('ac_users',$insdata);
+				$this->wb_model->insertData('ac_users',$insdata);
 			
 			//SESSION DESTROY
 			$sessdata = array(
 						'full_name' 			=> '',
+						'dob'					=> '',
 						'email'	 				=> '',
 						'std'	 				=> '',						
 						'mobile_no' 			=> '',
@@ -436,6 +490,7 @@ class Wb extends REST_Controller
 						'swift_code'			=> '',
 						'password'				=> '',
 						'user_doc'				=> '',
+						'user_profile_pic'		=> '',
 						'registration_date' 	=> '',
 						'otp_no'				=> ''
 				);
@@ -590,6 +645,7 @@ class Wb extends REST_Controller
 		{
 			$this->session->set_userdata('otp_no',$otp_no);
 			$this->session->set_userdata('mobile_no',$mobile_no);
+			$this->session->set_userdata('uu_id',$exist_mobile_no->user_id);
 			$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=>'');
 		}
 		
@@ -620,16 +676,9 @@ class Wb extends REST_Controller
 			$new_password = "123456";//$newpwd;
 			
 			$mobile_no = $this->session->userdata('mobile_no');
+			$uu_id = $this->session->userdata('uu_id');
 			$this->wb_model->updateData('ac_users',array('password'=>md5($new_password)),array('mobile_no'=>$mobile_no));
-			
-			//SESSION DESTROY
-			$sessdata = array(											
-						'mobile_no' => '',						
-						'otp_no' 	=> ''						
-				);
-			$this->session->unset_userdata($sessdata);
-			$this->session->sess_destroy(); 
-			
+				
 			$response= array('status'=>'200', 'message'=>'Password send Successfully!', 'data'=>'');
 		}
 		$this->response($response	, 200); // 200 being the HTTP response code		
@@ -661,9 +710,9 @@ class Wb extends REST_Controller
 			{
 				$response= array('status'=>'201', 'message'=>'new_password input missing!', 'data'=>'');
 			}
-			else if(strlen($new_password)<8)
+			else if(strlen($new_password)<6)
 			{
-				$response= array('status'=>'201', 'message'=>'new_password must be minimum 8 characters long!', 'data'=>'');
+				$response= array('status'=>'201', 'message'=>'new_password must be minimum 6 characters long!', 'data'=>'');
 			}
 			if($confirm_password=='')
 			{
@@ -673,7 +722,7 @@ class Wb extends REST_Controller
 			{
 				$response= array('status'=>'201', 'message'=>'new_password and confirm_password not match!', 'data'=>'');
 			}
-			if($new_password!='' && $confirm_password!='' && $new_password==$confirm_password && $user_data && strlen($new_password)>8)
+			if($new_password!='' && $confirm_password!='' && $new_password==$confirm_password && $user_data && strlen($new_password)>5)
 			{
 				$this->wb_model->updateData('ac_users',array('password'=>md5($new_password)),array('user_id'=>$user_id));			
 				$response= array('status'=>'200', 'message'=>'Password changed Successfully!', 'data'=>'');
@@ -686,6 +735,50 @@ class Wb extends REST_Controller
 		$this->response($response	, 200); // 200 being the HTTP response code		
 	}
 	
+	//Reset Password
+	function reset_password_post(){		
+			$user_id 				= $this->session->userdata('uu_id');			
+			$temp_password 			= $this->post('temp_password');
+			$new_password 			= $this->post('new_password');	
+					
+			$user_data = $this->wb_model->getsingle('ac_users',array('user_id' => $user_id,'password'=>md5($temp_password)));
+			if($temp_password=='')
+			{
+				$response= array('status'=>'201', 'message'=>'temp_password input missing!', 'data'=>'');
+			}
+			else if(!$user_data)
+			{
+				$response= array('status'=>'201', 'message'=>'temp_password Not match!', 'data'=>'');
+			}
+			if($new_password=='')
+			{
+				$response= array('status'=>'201', 'message'=>'new_password input missing!', 'data'=>'');
+			}
+			else if(strlen($new_password)<6)
+			{
+				$response= array('status'=>'201', 'message'=>'new_password must be minimum 6 characters long!', 'data'=>'');
+			}
+			if(!isset($user_id))
+			{
+				$response= array('status'=>'201', 'message'=>'Session Expired!', 'data'=>'');
+			}
+			if($new_password!='' && isset($user_id) && $user_data && strlen($new_password)>5)
+			{
+				$this->wb_model->updateData('ac_users',array('password'=>md5($new_password)),array('user_id'=>$user_id));
+				//SESSION DESTROY
+				$sessdata = array(											
+							'mobile_no' => '',						
+							'otp_no' 	=> '',
+							'uu_id'		=>''
+					);
+				$this->session->unset_userdata($sessdata);
+				$this->session->sess_destroy();
+			
+				$response= array('status'=>'200', 'message'=>'Password changed Successfully!', 'data'=>'');
+			}		
+		$this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
 	//Edit OR View Profile
 	function edit_profile_post(){
 		if($this->session->userdata('user_id') !='')
@@ -695,7 +788,7 @@ class Wb extends REST_Controller
 			{
 				$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
 			}
-			$user_data = $this->wb_model->getsingle('ac_users',array('user_id' => $user_id));
+			$user_data = $this->wb_model->getsingle('ac_users',array('user_id' => $user_id));			
 			if(!$user_data)
 			{
 				$response= array('status'=>'201', 'message'=>'no record found!', 'data'=>'');
@@ -706,6 +799,7 @@ class Wb extends REST_Controller
 				$final['user_id'] 			= $user_data->user_id;
 				$final['full_name'] 		= $user_data->full_name;
 				$final['email'] 			= $user_data->email;
+				$final['dob'] 				= $user_data->dob;
 				$final['std'] 				= $user_data->std;
 				$final['mobile_no'] 		= $user_data->mobile_no;
 				$final['country'] 			= $user_data->country;
@@ -718,17 +812,22 @@ class Wb extends REST_Controller
 				$final['ac_holder_name'] 	= $user_data->ac_holder_name;
 				$final['account_no_iban'] 	= $user_data->account_no_iban;
 				$final['bank_id'] 			= $user_data->bank_id;
-				$bank_data = $this->wb_model->getsingle('ac_banks',array('id' => $user_data->bank_id));
-				$final['bank'] 				= $bank_data->name;
+				$bank_data = $this->wb_model->getsingle('ac_banks',array('bank_id' => $user_data->bank_id));
+				$final['bank'] 				= $bank_data->bank_name;
 				$final['swift_code'] 		= $user_data->swift_code;
 				if($user_data->user_doc!='')
 				{
-				$final['user_doc'] 			= base_url()."documents/".$user_data->user_doc;	
+				$final['user_doc'] 			= base_url()."uploads/user_documents/".$user_data->user_doc;	
 				}else{
 				$final['user_doc'] 			= $user_data->user_doc;
 				}
-				$final['registration_date'] = $user_data->registration_date;
-				
+				if($user_data->user_profile_pic!='')
+				{
+				$final['profile_pic'] 			= base_url()."uploads/profile_images/".$user_data->user_profile_pic;	
+				}else{
+				$final['profile_pic'] 			= $user_data->user_profile_pic;
+				}
+				$final['registration_date'] = $user_data->registration_date;				
 				$final_data = (object)$final;
 				$response= array('status'=>'200', 'message'=>'', 'data'=>$final_data);
 			}
@@ -1117,8 +1216,7 @@ class Wb extends REST_Controller
 			if(empty($_FILES['files']['name']))
 			{
 				$response= array('status'=>'201', 'message'=>'Please Select file!', 'data'=>'');
-			}		
-			
+			}	
 			if($user_id!='' && !empty($_FILES['files']['name']))
 			{
 				$data['upload_path'] = 'uploads/profile_images/';
@@ -1236,45 +1334,39 @@ class Wb extends REST_Controller
 	}
 	
 	//GET Categories
-	function categories_get(){ 
-		if($this->session->userdata('user_id') !='')
+	function categories_get(){ 		
+		$data = $this->wb_model->getAllrecord('ac_categories');
+		if(count($data)>0)
 		{
-			$data = $this->wb_model->getAllrecord('ac_categories');
-			if(count($data)>0)
+			$final = array();
+			foreach($data as $d)
 			{
-				$final = array();
-				foreach($data as $d)
+				$final_data['category_id'] 	= $d->category_id;
+				$final_data['name'] 		= $d->name;
+				if($d->icon!='')
 				{
-					$final_data['category_id'] 	= $d->category_id;
-					$final_data['name'] 		= $d->name;
-					if($d->icon!='')
-					{
-						$final_data['icon'] 		= base_url()."uploads/category_icon/".$d->icon;
-					}else{
-						$final_data['icon'] 		= $d->icon;
-					}
-					if($d->status=='0')
-					{
-						$final_data['status'] 		= "Active";
-					}else{
-						$final_data['status'] 		= "Deactive";
-					}
-					
-					$final_data['entry_date'] 	= $d->entry_date;
-					$final[] = $final_data;
+					$final_data['icon'] 		= base_url()."uploads/category_icon/".$d->icon;
+				}else{
+					$final_data['icon'] 		= $d->icon;
+				}
+				if($d->status=='0')
+				{
+					$final_data['status'] 		= "Active";
+				}else{
+					$final_data['status'] 		= "Deactive";
 				}
 				
-				$response= array('status'=>'200', 'message'=>'success', 'data'=>$final );
+				$final_data['entry_date'] 	= $d->entry_date;
+				$final[] = $final_data;
 			}
-			else
-			{
-				$response= array('status'=>'200', 'message'=>'success', 'data'=>$data );
-			}
+			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final );
 		}
 		else
 		{
-			$response= array('status'=>'201', 'message'=>'Please Login first!', 'data'=>'' );
-		}																		
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$data );
+		}
+																				
         $this->response($response	, 200); // 200 being the HTTP response code		
 	}
 	
@@ -1736,85 +1828,79 @@ class Wb extends REST_Controller
 	
 	//GET ALL Products By category
 	function products_by_category_post(){
-		if($this->session->userdata('user_id') !='')
+		$category_id 		= $this->post('category_id');
+		if($category_id=='')
 		{
-			$category_id 		= $this->post('category_id');
-			if($category_id=='')
+			$response= array('status'=>'201', 'message'=>'category_id input missing!', 'data'=>'');
+		}
+		$data = $this->wb_model->getAllwhere('ac_products',array('category_id'=>$category_id));
+		if(count($data)>0 && $category_id!='')
+		{
+			$final_data = array();
+			foreach($data as $d)
 			{
-				$response= array('status'=>'201', 'message'=>'category_id input missing!', 'data'=>'');
-			}
-			$data = $this->wb_model->getAllwhere('ac_products',array('category_id'=>$category_id));
-			if(count($data)>0 && $category_id!='')
-			{
-				$final_data = array();
-				foreach($data as $d)
+				$final['product_id'] 			= $d->product_id;
+				$final['user_id'] 				= $d->user_id;
+				$final['product_name'] 			= $d->product_name;
+				$final['category_id'] 			= $d->category_id;
+				$category_data = $this->wb_model->getsingle('ac_categories',array('category_id' => $d->category_id));		
+				$final['category_name'] 		= $category_data->name;
+				$final['description'] 			= $d->description;
+				$final['selling_price'] 		= $d->selling_price;
+				$final['bid_start_date_time'] 	= $d->bid_start_date_time;
+				$final['bid_end_date_time'] 	= $d->bid_end_date_time;
+				
+				//documents
+				$documents = $this->wb_model->getAllwhere('ac_product_documents',array('product_id' => $d->product_id));
+				if(count($documents)>0)
 				{
-					$final['product_id'] 			= $d->product_id;
-					$final['user_id'] 				= $d->user_id;
-					$final['product_name'] 			= $d->product_name;
-					$final['category_id'] 			= $d->category_id;
-					$category_data = $this->wb_model->getsingle('ac_categories',array('category_id' => $d->category_id));		
-					$final['category_name'] 		= $category_data->name;
-					$final['description'] 			= $d->description;
-					$final['selling_price'] 		= $d->selling_price;
-					$final['bid_start_date_time'] 	= $d->bid_start_date_time;
-					$final['bid_end_date_time'] 	= $d->bid_end_date_time;
-					
-					//documents
-					$documents = $this->wb_model->getAllwhere('ac_product_documents',array('product_id' => $d->product_id));
-					if(count($documents)>0)
+					$final_document = array();
+					foreach($documents as $dc)
 					{
-						$final_document = array();
-						foreach($documents as $dc)
-						{
-							$doc['id'] 			= $dc->id;
-							$doc['document'] 	= base_url()."uploads/product_documents/".$dc->document;
-							$doc['upload_date'] = $dc->upload_date;
-							$final_document[] 	= $doc;
-						}
-					$final['documents'] 	= $final_document;		
+						$doc['id'] 			= $dc->id;
+						$doc['document'] 	= base_url()."uploads/product_documents/".$dc->document;
+						$doc['upload_date'] = $dc->upload_date;
+						$final_document[] 	= $doc;
 					}
-					else{
-					$final['documents'] 	= "";	
-					}
-					
-					//Images
-					$images = $this->wb_model->getAllwhere('ac_product_images',array('product_id' => $d->product_id));
-					if(count($images)>0)
+				$final['documents'] 	= $final_document;		
+				}
+				else{
+				$final['documents'] 	= "";	
+				}
+				
+				//Images
+				$images = $this->wb_model->getAllwhere('ac_product_images',array('product_id' => $d->product_id));
+				if(count($images)>0)
+				{
+					$final_images = array();
+					foreach($images as $img)
 					{
-						$final_images = array();
-						foreach($images as $img)
-						{
-							$im['id'] 			= $img->id;
-							$im['image'] 		= base_url()."uploads/product_images/".$img->image;
-							$im['upload_date'] 	= $img->upload_date;
-							$final_images[] = $im;
-						}
-					$final['images'] 	= $final_images;		
+						$im['id'] 			= $img->id;
+						$im['image'] 		= base_url()."uploads/product_images/".$img->image;
+						$im['upload_date'] 	= $img->upload_date;
+						$final_images[] = $im;
 					}
-					else{
-					$final['images'] 	= "";	
-					}
-					if($d->status=='0')
-					{
-						$final['status'] 	= "Active";
-					}else{
-						$final['status'] 	= "Deactive";
-					}
-					$final['entry_date'] 	= $d->entry_date;
-					$final_data[] = $final;
-				}			
-				$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
-			}
-			else
-			{
-				$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
-			}
+				$final['images'] 	= $final_images;		
+				}
+				else{
+				$final['images'] 	= "";	
+				}
+				if($d->status=='0')
+				{
+					$final['status'] 	= "Active";
+				}else{
+					$final['status'] 	= "Deactive";
+				}
+				$final['entry_date'] 	= $d->entry_date;
+				$final_data[] = $final;
+			}			
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
 		}
 		else
 		{
-			$response= array('status'=>'201', 'message'=>'Please Login first!', 'data'=>'' );
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
 		}
+		
         $this->response($response	, 200); // 200 being the HTTP response code		
 	}
 	//GET ALL My Products
@@ -2958,92 +3044,85 @@ class Wb extends REST_Controller
 	}
 	
 	//GET Single Product Page
-	function single_product_post(){
-		if($this->session->userdata('user_id') !='')
+	function single_product_post(){		
+		$product_id 		= $this->post('product_id');
+		$products_data 	= $this->wb_model->getsingle('ac_products',array('product_id'=> $product_id));		
+		if($product_id=='')
 		{
-			$product_id 		= $this->post('product_id');
-			$products_data 	= $this->wb_model->getsingle('ac_products',array('product_id'=> $product_id));		
-			if($product_id=='')
-			{
-				$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
-			}
-			else if(!$products_data)
-			{
-				$response= array('status'=>'201', 'message'=>'product_id not exist!', 'data'=>'');
-			}
+			$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+		}
+		else if(!$products_data)
+		{
+			$response= array('status'=>'201', 'message'=>'product_id not exist!', 'data'=>'');
+		}
+		
+		if($products_data && $product_id!='')
+		{
+			$d = $products_data;
+			$final_data = array();
 			
-			if($products_data && $product_id!='')
-			{
-				$d = $products_data;
-				$final_data = array();
+				$final['product_id'] 			= $d->product_id;
+				$final['user_id'] 				= $d->user_id;
+				$final['product_name'] 			= $d->product_name;
+				$final['category_id'] 			= $d->category_id;
+				$category_data = $this->wb_model->getsingle('ac_categories',array('category_id' => $d->category_id));		
+				$final['category_name'] 		= $category_data->name;
+				$final['description'] 			= $d->description;
+				$final['selling_price'] 		= $d->selling_price;
+				$final['current_bid_amount']    = $d->current_bid_amount;
+				$final['bid_start_date_time'] 	= $d->bid_start_date_time;
+				$final['bid_end_date_time'] 	= $d->bid_end_date_time;
 				
-					$final['product_id'] 			= $d->product_id;
-					$final['user_id'] 				= $d->user_id;
-					$final['product_name'] 			= $d->product_name;
-					$final['category_id'] 			= $d->category_id;
-					$category_data = $this->wb_model->getsingle('ac_categories',array('category_id' => $d->category_id));		
-					$final['category_name'] 		= $category_data->name;
-					$final['description'] 			= $d->description;
-					$final['selling_price'] 		= $d->selling_price;
-					$final['current_bid_amount']    = $d->current_bid_amount;
-					$final['bid_start_date_time'] 	= $d->bid_start_date_time;
-					$final['bid_end_date_time'] 	= $d->bid_end_date_time;
-					
-					//documents
-					$documents = $this->wb_model->getAllwhere('ac_product_documents',array('product_id' => $d->product_id));
-					if(count($documents)>0)
+				//documents
+				$documents = $this->wb_model->getAllwhere('ac_product_documents',array('product_id' => $d->product_id));
+				if(count($documents)>0)
+				{
+					$final_document = array();
+					foreach($documents as $dc)
 					{
-						$final_document = array();
-						foreach($documents as $dc)
-						{
-							$doc['id'] 			= $dc->id;
-							$doc['document'] 	= base_url()."uploads/product_documents/".$dc->document;
-							$doc['upload_date'] = $dc->upload_date;
-							$final_document[] 	= $doc;
-						}
-					$final['documents'] 	= $final_document;		
+						$doc['id'] 			= $dc->id;
+						$doc['document'] 	= base_url()."uploads/product_documents/".$dc->document;
+						$doc['upload_date'] = $dc->upload_date;
+						$final_document[] 	= $doc;
 					}
-					else{
-					$final['documents'] 	= "";	
-					}
-					
-					//Images
-					$images = $this->wb_model->getAllwhere('ac_product_images',array('product_id' => $d->product_id));
-					if(count($images)>0)
+				$final['documents'] 	= $final_document;		
+				}
+				else{
+				$final['documents'] 	= "";	
+				}
+				
+				//Images
+				$images = $this->wb_model->getAllwhere('ac_product_images',array('product_id' => $d->product_id));
+				if(count($images)>0)
+				{
+					$final_images = array();
+					foreach($images as $img)
 					{
-						$final_images = array();
-						foreach($images as $img)
-						{
-							$im['id'] 			= $img->id;
-							$im['image'] 		= base_url()."uploads/product_images/".$img->image;
-							$im['upload_date'] 	= $img->upload_date;
-							$final_images[] = $im;
-						}
-					$final['images'] 	= $final_images;		
+						$im['id'] 			= $img->id;
+						$im['image'] 		= base_url()."uploads/product_images/".$img->image;
+						$im['upload_date'] 	= $img->upload_date;
+						$final_images[] = $im;
 					}
-					else{
-					$final['images'] 	= "";	
-					}
-					if($d->status=='0')
-					{
-						$final['status'] 	= "Active";
-					}else{
-						$final['status'] 	= "Deactive";
-					}
-					$final['entry_date'] 	= $d->entry_date;
-					$final_data[] = $final;
-							
-				$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
-			}
-			else
-			{
-				$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
-			}
+				$final['images'] 	= $final_images;		
+				}
+				else{
+				$final['images'] 	= "";	
+				}
+				if($d->status=='0')
+				{
+					$final['status'] 	= "Active";
+				}else{
+					$final['status'] 	= "Deactive";
+				}
+				$final['entry_date'] 	= $d->entry_date;
+				$final_data[] = $final;
+						
+			$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
 		}
 		else
 		{
-			$response= array('status'=>'201', 'message'=>'Please Login first!', 'data'=>'' );
-		}
+			$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+		}		
         $this->response($response	, 200); // 200 being the HTTP response code		
 	}
 	
@@ -3411,6 +3490,283 @@ class Wb extends REST_Controller
         $this->response($response	, 200); // 200 being the HTTP response code		
 	}
 	
+	//My lossing Products
+	function my_lossing_list_post(){
+		if($this->session->userdata('user_id') !='')
+		{
+			$user_id 		= $this->post('user_id');
+			$users_data 	= $this->wb_model->getsingle('ac_users',array('user_id'=> $user_id));
+			if($user_id=='')
+			{
+				$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+			}
+			else if(!$users_data)
+			{
+				$response= array('status'=>'201', 'message'=>'user_id not exist!', 'data'=>'');
+			}
+			if($user_id!='' && $users_data )
+			{
+				$data = $this->wb_model->my_bids_product($user_id);	
+							
+				if(count($data)>0)
+				{
+					$final_data = array();
+					foreach($data as $d)
+					{
+						$prod_data = $this->wb_model->getsingle('ac_products',array('product_id' => $d->product_id));							
+						$win_prod_data = $this->wb_model->get_winner_details_by_product($d->product_id);
+						$w_data = $this->wb_model->getsingle('ac_product_bids',array('bid_amount'=>$win_prod_data[0]->bid_amount,'product_id'=>$d->product_id));					
+						
+						if($prod_data->bid_end_date_time < date('Y-m-d h:i:s') && $w_data->user_id!=$user_id)
+						{
+							$final['product_id'] 			= $prod_data->product_id;								
+							$final['product_name'] 			= $prod_data->product_name;
+							$final['description'] 			= $prod_data->description;
+							$final['bid_start_date_time'] 	= $prod_data->bid_start_date_time;
+							$final['bid_end_date_time'] 	= $prod_data->bid_end_date_time;
+							if($prod_data->status=='0')
+							{
+								$final['status'] 	= "Active";
+							}else{
+								$final['status'] 	= "Deactive";
+							}
+							$final['bid_amount'] 	= $d->bid_amount;
+							$final['bid_date'] 	= $d->bid_date;
+							$final_data[] = $final;
+						}
+					}
+					if(count($final_data)>0)
+					{
+						$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
+					}
+					else
+					{
+						$response= array('status'=>'201', 'message'=>'No lossing products!', 'data'=>'' );
+					}
+					
+				}
+				else
+				{
+					$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+				}
+			}
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'Please Login first!', 'data'=>'' );
+		}
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Add Notification
+	function add_notification_post(){
+		if($this->session->userdata('user_id') !='')
+		{
+			$user_id 				= $this->post('user_id');
+			$notification 			= $this->post('notification');
+			$user_data 				= $this->wb_model->getsingle('ac_users',array('user_id'=>$user_id));
+			
+			if($user_id=='')
+			{
+				$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+			}
+			else if(!$user_data)
+			{
+				$response= array('status'=>'201', 'message'=>'user_id not valid!', 'data'=>'');
+			} 
+			if($notification=='')
+			{
+				$response= array('status'=>'201', 'message'=>'notification input missing!', 'data'=>'');
+			}
+			
+			if($user_id!='' && $notification!='' && $user_data)
+			{
+				$insdata = array(
+							'user_id' 			=> $user_id,						
+							'notification' 		=> $notification,						
+							'notification_date'	=> date('Y-m-d')
+					);
+				$this->wb_model->insertData('ac_notifications',$insdata);
+				$response= array('status'=>'200', 'message'=>'Notification added Successfully!', 'data'=>'');
+			}
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'Please Login first!', 'data'=>'' );
+		}
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//GET ALL Notification
+	function notifications_get(){
+		if($this->session->userdata('user_id') !='')
+		{
+			$data = $this->wb_model->getAllwhere_order('ac_notifications',array('notification_id !='=>'0'),'notification_id','desc');
+			if(count($data)>0)
+			{
+				$final = array();
+				foreach($data as $d)
+				{
+					$final_data['notification_id'] 		= $d->notification_id;
+					$final_data['user_id'] 				= $d->user_id;
+					$final_data['notification'] 		= $d->notification;
+					$final_data['notification_date'] 	= $d->notification_date;
+					if($d->is_read=='0')
+					{
+						$final_data['is_read'] 	= "No";
+					}else{
+						$final_data['is_read'] 	= "Yes";
+					}
+					$final[] = $final_data;
+				}			
+				$response= array('status'=>'200', 'message'=>'success', 'data'=>$final );
+			}
+			else
+			{
+				$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+			}
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'Please Login first!', 'data'=>'' );
+		}
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//GET My Notification
+	function my_notifications_post(){
+		if($this->session->userdata('user_id') !='')
+		{
+			$user_id 				= $this->post('user_id');			
+			$user_data 				= $this->wb_model->getsingle('ac_users',array('user_id'=>$user_id));
+			
+			if($user_id=='')
+			{
+				$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+			}
+			else if(!$user_data)
+			{
+				$response= array('status'=>'201', 'message'=>'user_id not valid!', 'data'=>'');
+			} 
+			$data = $this->wb_model->getAllwhere_order('ac_notifications',array('user_id'=>$user_id),'notification_id','desc');
+			if($user_id!='' && $user_data)
+			{
+				if(count($data)>0)
+				{
+					$final = array();
+					foreach($data as $d)
+					{
+						$final_data['notification_id'] 		= $d->notification_id;						
+						$final_data['notification'] 		= $d->notification;
+						$final_data['notification_date'] 	= $d->notification_date;
+						if($d->is_read=='0')
+						{
+							$final_data['is_read'] 	= "No";
+						}else{
+							$final_data['is_read'] 	= "Yes";
+						}
+						$final[] = $final_data;
+					}			
+					$response= array('status'=>'200', 'message'=>'success', 'data'=>$final );
+				}
+				else
+				{
+					$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+				}
+			}
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'Please Login first!', 'data'=>'' );
+		}
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//Add Comment
+	function add_comment_post(){
+		if($this->session->userdata('user_id') !='')
+		{
+			$user_id 				= $this->post('user_id');
+			$product_id 			= $this->post('product_id');
+			$comments 				= $this->post('comments');
+			$user_data 				= $this->wb_model->getsingle('ac_users',array('user_id'=>$user_id));
+			$product_data 			= $this->wb_model->getsingle('ac_products',array('product_id'=>$product_id));
+			
+			if($user_id=='')
+			{
+				$response= array('status'=>'201', 'message'=>'user_id input missing!', 'data'=>'');
+			}
+			else if(!$user_data)
+			{
+				$response= array('status'=>'201', 'message'=>'user_id not valid!', 'data'=>'');
+			}
+			if($product_id=='')
+			{
+				$response= array('status'=>'201', 'message'=>'product_id input missing!', 'data'=>'');
+			}
+			else if(!$product_data)
+			{
+				$response= array('status'=>'201', 'message'=>'product_id not valid!', 'data'=>'');
+			}
+			if($comments=='')
+			{
+				$response= array('status'=>'201', 'message'=>'comments input missing!', 'data'=>'');
+			}
+			
+			if($user_id!='' && $product_id!='' && $comments!='' && $product_data && $user_data)
+			{
+				$insdata = array(
+							'user_id' 			=> $user_id,
+							'product_id' 		=> $product_id,
+							'comments' 			=> $comments,													
+							'comment_date'		=> date('Y-m-d')
+					);
+				$this->wb_model->insertData('ac_comments',$insdata);
+				$response= array('status'=>'200', 'message'=>'Comments added Successfully!', 'data'=>'');
+			}
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'Please Login first!', 'data'=>'' );
+		}
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
+	
+	//GET ALL Comments
+	function comments_get(){
+		if($this->session->userdata('user_id') !='')
+		{
+			$data = $this->wb_model->getAllwhere_order('ac_comments',array('comment_id !='=>'0'),'comment_id','desc');
+			if(count($data)>0)
+			{
+				$final = array();
+				foreach($data as $d)
+				{
+					$user_data 		= $this->wb_model->getsingle('ac_users',array('user_id'=> $d->user_id));
+					$product_data 	= $this->wb_model->getsingle('ac_products',array('product_id'=> $d->product_id));
+			
+					$final_data['comment_id'] 		= $d->comment_id;
+					$final_data['user_id'] 			= $d->user_id;
+					$final_data['user_name'] 		= $user_data->full_name;
+					$final_data['product_id'] 		= $d->product_id;
+					$final_data['product_name'] 	= $product_data->product_name;
+					$final_data['comments'] 		= $d->comments;
+					$final_data['comment_date'] 	= $d->comment_date;
+					$final[] = $final_data;
+				}			
+				$response= array('status'=>'200', 'message'=>'success', 'data'=>$final );
+			}
+			else
+			{
+				$response= array('status'=>'201', 'message'=>'No Record found!', 'data'=>'' );
+			}
+		}
+		else
+		{
+			$response= array('status'=>'201', 'message'=>'Please Login first!', 'data'=>'' );
+		}
+        $this->response($response	, 200); // 200 being the HTTP response code		
+	}
 
 }
 	

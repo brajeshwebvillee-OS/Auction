@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Oct 08, 2018 at 11:05 AM
+-- Generation Time: Oct 11, 2018 at 10:59 AM
 -- Server version: 10.1.32-MariaDB
 -- PHP Version: 5.6.36
 
@@ -79,6 +79,30 @@ INSERT INTO `ac_categories` (`category_id`, `name`, `icon`, `status`, `entry_dat
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `ac_comments`
+--
+
+CREATE TABLE `ac_comments` (
+  `comment_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `product_id` int(11) NOT NULL,
+  `comments` longtext NOT NULL,
+  `comment_date` date NOT NULL,
+  `created_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `ac_comments`
+--
+
+INSERT INTO `ac_comments` (`comment_id`, `user_id`, `product_id`, `comments`, `comment_date`, `created_date`) VALUES
+(1, 1, 1, 'hu your testtt tttt', '2018-10-11', '2018-10-11 05:53:58'),
+(2, 1, 2, 'hu your tettvghvghvvvb nbbbn bbbn testtt tttt', '2018-10-11', '2018-10-11 05:54:21'),
+(3, 1, 2, 'jajajjajaj', '2018-10-11', '2018-10-11 05:54:33');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `ac_favourites`
 --
 
@@ -98,6 +122,31 @@ INSERT INTO `ac_favourites` (`id`, `user_id`, `product_id`, `added_date`, `creat
 (1, 1, 1, '2018-10-01', '2018-10-01 05:41:25'),
 (2, 1, 2, '2018-10-01', '2018-10-01 05:41:41'),
 (3, 1, 5, '2018-10-01', '2018-10-01 05:46:55');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `ac_notifications`
+--
+
+CREATE TABLE `ac_notifications` (
+  `notification_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `notification_date` date NOT NULL,
+  `notification` varchar(1000) NOT NULL,
+  `is_read` int(11) NOT NULL COMMENT '0=unread,1=read',
+  `created_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+--
+-- Dumping data for table `ac_notifications`
+--
+
+INSERT INTO `ac_notifications` (`notification_id`, `user_id`, `notification_date`, `notification`, `is_read`, `created_date`) VALUES
+(1, 2, '2018-10-10', 'Money added sucesss dsfdsfds', 0, '2018-10-10 06:15:20'),
+(2, 2, '2018-10-10', 'gghgdfsd sd sdfdsf dsfds', 0, '2018-10-10 06:15:29'),
+(3, 1, '2018-10-10', 'jhjhjh', 0, '2018-10-10 06:18:19'),
+(4, 1, '2018-10-10', 'hu your testtt tttt', 0, '2018-10-10 06:18:32');
 
 -- --------------------------------------------------------
 
@@ -126,7 +175,7 @@ CREATE TABLE `ac_products` (
 
 INSERT INTO `ac_products` (`product_id`, `user_id`, `product_name`, `category_id`, `description`, `selling_price`, `current_bid_amount`, `bid_start_date_time`, `bid_end_date_time`, `status`, `entry_date`, `created_date`) VALUES
 (1, 1, 'testttt', 9, 'tetstt ttevhv bjbdsn sbjabjbas sajbdjbsajdb', '5000', 8500.00, '2018-09-27 12:00:00', '2018-09-30 12:00:00', 0, '2018-09-27', '2018-10-05 05:46:05'),
-(2, 1, 'testttt', 9, 'tetstt ttevhv bjbdsn sbjabjbas sajbdjbsajdb', '5000', 8500.00, '2018-10-10 12:00:00', '2018-12-20 12:00:00', 0, '2018-09-27', '2018-10-05 05:46:15'),
+(2, 1, 'testttt', 9, 'tetstt ttevhv bjbdsn sbjabjbas sajbdjbsajdb', '5000', 8500.00, '2018-09-10 12:00:00', '2018-09-30 12:00:00', 0, '2018-09-27', '2018-10-09 06:25:10'),
 (3, 2, 'testttt', 9, 'tetstt ttevhv bjbdsn sbjabjbas sajbdjbsajdb', '10000', 10000.00, '2018-09-27 12:00:00', '2018-10-30 10:28:28', 1, '2018-09-27', '2018-10-04 05:28:11'),
 (4, 2, 'testttt', 9, 'tetstt ttevhv bjbdsn sbjabjbas sajbdjbsajdb', '10000', 10000.00, '2018-09-27 12:00:00', '2018-12-20 12:00:00', 0, '2018-09-27', '2018-10-04 05:28:19'),
 (5, 1, 'testttt', 9, 'tetstt ttevhv bjbdsn sbjabjbas sajbdjbsajdb', '10000', 10000.00, '2018-09-27 12:00:00', '2018-12-20 12:00:00', 0, '2018-09-27', '2018-10-04 05:28:26');
@@ -151,11 +200,12 @@ CREATE TABLE `ac_product_bids` (
 --
 
 INSERT INTO `ac_product_bids` (`id`, `user_id`, `product_id`, `bid_amount`, `bid_date`, `created_date`) VALUES
-(1, 1, 1, 6000.00, '2018-10-05', '2018-10-05 05:44:40'),
+(1, 2, 1, 6000.00, '2018-10-05', '2018-10-09 06:05:07'),
 (2, 1, 1, 6500.00, '2018-10-05', '2018-10-05 05:44:55'),
 (3, 2, 1, 7000.00, '2018-10-05', '2018-10-05 05:45:57'),
-(4, 2, 1, 8500.00, '2018-10-05', '2018-10-05 05:46:05'),
-(5, 2, 2, 8500.00, '2018-10-05', '2018-10-05 05:46:15');
+(4, 1, 1, 8500.00, '2018-10-05', '2018-10-09 06:51:03'),
+(5, 4, 2, 8400.00, '2018-10-05', '2018-10-09 07:20:10'),
+(6, 2, 2, 8500.00, '2018-10-05', '2018-10-09 07:19:51');
 
 -- --------------------------------------------------------
 
@@ -228,6 +278,7 @@ CREATE TABLE `ac_roles` (
 CREATE TABLE `ac_users` (
   `user_id` int(11) NOT NULL,
   `full_name` varchar(250) NOT NULL,
+  `dob` date NOT NULL,
   `email` varchar(250) NOT NULL,
   `std` varchar(250) NOT NULL,
   `mobile_no` varchar(50) NOT NULL,
@@ -254,11 +305,13 @@ CREATE TABLE `ac_users` (
 -- Dumping data for table `ac_users`
 --
 
-INSERT INTO `ac_users` (`user_id`, `full_name`, `email`, `std`, `mobile_no`, `country`, `province`, `city`, `identification_no`, `identification_type`, `district`, `street`, `ac_holder_name`, `account_no_iban`, `bank_id`, `swift_code`, `password`, `user_doc`, `user_profile_pic`, `status`, `registration_date`, `crated_date`) VALUES
-(1, 'brajesh', 'brajesh.vaishnav35@gmail.com', '+91', '9098343935', 'India', 'mp', 'indore', '12345', 'GovernmentID', 'indore', 'indore', 'brajesh', '123455', 1, '2121', '25d55ad283aa400af464c76d713c07ad', 'download_(1).jpg', 'download_(4).jpg', 1, '2018-09-24', '2018-09-28 06:33:10'),
-(2, 'brajesh vaishnav', 'brajesh.vaishnav@gmail.com', '+91', '9098343934', 'india', '11111', 'indore', '1212121', 'GovernmentID', 'indore', 'testt', 'brajesh', '121212', 1, '12345', 'e10adc3949ba59abbe56e057f20f883e', 'download_(1).jpg', 'download_(1).jpg', 1, '2018-09-25', '2018-09-28 05:50:20'),
-(3, 'brajesh vaishnav', 'brajesh.vaishnav411@gmail.com', '+91', '9098343933', 'india', '11111', 'indore', '1212121', 'GovernmentID', 'indore', 'testt', 'brajesh', '121212', 1, '12345', 'e10adc3949ba59abbe56e057f20f883e', '', '', 0, '2018-09-25', '2018-09-26 06:24:21'),
-(4, 'brajesh vaishnav', 'brajesh.vaishnav@gmailxxxx.com', '+91', '9098343985', 'india', '11111', 'indore', '1212121', 'GovernmentID', 'indore', 'testt', 'brajesh', '121212', 1, '12345', 'e10adc3949ba59abbe56e057f20f883e', '', 'download_(5).jpg', 0, '2018-09-25', '2018-09-28 06:33:59');
+INSERT INTO `ac_users` (`user_id`, `full_name`, `dob`, `email`, `std`, `mobile_no`, `country`, `province`, `city`, `identification_no`, `identification_type`, `district`, `street`, `ac_holder_name`, `account_no_iban`, `bank_id`, `swift_code`, `password`, `user_doc`, `user_profile_pic`, `status`, `registration_date`, `crated_date`) VALUES
+(1, 'brajesh', '0000-00-00', 'brajesh.vaishnav35@gmail.com', '+91', '9098343935', 'India', 'mp', 'indore', '12345', 'GovernmentID', 'indore', 'indore', 'brajesh', '123455', 1, '2121', 'fca154d64f34dda1322c4888c4da90cf', 'download_(1).jpg', 'download_(2).jpg', 1, '2018-09-24', '2018-10-11 08:56:01'),
+(2, 'brajesh vaishnav', '0000-00-00', 'brajesh.vaishnav@gmail.com', '+91', '9098343934', 'india', '11111', 'indore', '1212121', 'GovernmentID', 'indore', 'testt', 'brajesh', '121212', 1, '12345', 'fcea920f7412b5da7be0cf42b8c93759', 'download_(1).jpg', 'download_(1).jpg', 1, '2018-09-25', '2018-10-11 08:12:15'),
+(3, 'brajesh vaishnav', '0000-00-00', 'brajesh.vaishnav411@gmail.com', '+91', '9098343933', 'india', '11111', 'indore', '1212121', 'GovernmentID', 'indore', 'testt', 'brajesh', '121212', 1, '12345', 'e10adc3949ba59abbe56e057f20f883e', '', '', 0, '2018-09-25', '2018-09-26 06:24:21'),
+(4, 'brajesh vaishnav', '0000-00-00', 'brajesh.vaishnav@gmailxxxx.com', '+91', '9098343985', 'india', '11111', 'indore', '1212121', 'GovernmentID', 'indore', 'testt', 'brajesh', '121212', 1, '12345', 'fcea920f7412b5da7be0cf42b8c93759', '', 'download_(5).jpg', 0, '2018-09-25', '2018-10-11 08:16:27'),
+(8, 'brajesh', '0000-00-00', 'brajesh@test.com', '91', '9098343922', 'india', 'brajesh', '', '1212121', 'govermentid', '', '', 'testt', '12121212', 2, '1236544', 'fcea920f7412b5da7be0cf42b8c93759', 'download3.jpg', 'download_(2).jpg', 0, '2018-10-11', '2018-10-11 08:14:42'),
+(9, 'brajesh', '2020-10-01', 'brajesh1@test.com', '91', '9098343900', 'india', 'brajesh', '', '1212121', 'govermentid', '', '', 'testt', '12121212', 12345, '1236544', 'e10adc3949ba59abbe56e057f20f883e', 'download4.jpg', 'download_(1)1.jpg', 0, '2018-10-11', '2018-10-11 08:28:24');
 
 -- --------------------------------------------------------
 
@@ -364,10 +417,22 @@ ALTER TABLE `ac_categories`
   ADD PRIMARY KEY (`category_id`);
 
 --
+-- Indexes for table `ac_comments`
+--
+ALTER TABLE `ac_comments`
+  ADD PRIMARY KEY (`comment_id`);
+
+--
 -- Indexes for table `ac_favourites`
 --
 ALTER TABLE `ac_favourites`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `ac_notifications`
+--
+ALTER TABLE `ac_notifications`
+  ADD PRIMARY KEY (`notification_id`);
 
 --
 -- Indexes for table `ac_products`
@@ -440,10 +505,22 @@ ALTER TABLE `ac_categories`
   MODIFY `category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
+-- AUTO_INCREMENT for table `ac_comments`
+--
+ALTER TABLE `ac_comments`
+  MODIFY `comment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
 -- AUTO_INCREMENT for table `ac_favourites`
 --
 ALTER TABLE `ac_favourites`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `ac_notifications`
+--
+ALTER TABLE `ac_notifications`
+  MODIFY `notification_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `ac_products`
@@ -455,7 +532,7 @@ ALTER TABLE `ac_products`
 -- AUTO_INCREMENT for table `ac_product_bids`
 --
 ALTER TABLE `ac_product_bids`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `ac_product_documents`
@@ -479,7 +556,7 @@ ALTER TABLE `ac_roles`
 -- AUTO_INCREMENT for table `ac_users`
 --
 ALTER TABLE `ac_users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `ac_wallet`
@@ -497,7 +574,7 @@ ALTER TABLE `ac_wallet_details`
 -- AUTO_INCREMENT for table `ac_watch_list`
 --
 ALTER TABLE `ac_watch_list`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
