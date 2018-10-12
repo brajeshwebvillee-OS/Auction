@@ -16,7 +16,7 @@ class WB_model extends CI_Model
     }
 	
 	 /*<!--UPDATE RECORD FROM SINGLE TABLE-->*/
-    function updateData($table, $data, $where)
+    function updateData($table, $data, $where) 
     {
         $this->db->update($table, $data, $where);
         return;

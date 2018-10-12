@@ -376,7 +376,7 @@ class Wb extends REST_Controller
 						'registration_date' 	=> date('Y-m-d'),
 						'otp_no'				=> $otp_no
 				);
-				$this->session->userdata=$insdata;
+				$this->session->set_userdata($insdata);
 				$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=>'');
 			}
 			
@@ -389,7 +389,6 @@ class Wb extends REST_Controller
 	
 	//Submit OTP Registration API
 	function submit_otp_post(){
-		
 		$otp 				= $this->post('otp');
 		if($otp=='')
 		{
@@ -471,7 +470,7 @@ class Wb extends REST_Controller
 						'registration_date' 	=> '',
 						'otp_no'				=> ''
 				);
-			$this->session->userdata=$sessdata;
+			$this->session->unset_userdata($sessdata);
 			$this->session->sess_destroy(); 
 			
 			$response= array('status'=>'200', 'message'=>'Registration Successfully!', 'data'=>'');
@@ -499,8 +498,7 @@ class Wb extends REST_Controller
 		}
 		else
 		{
-			$sessdata = array('full_name'=> $otp_no);
-			$this->session->userdata=$sessdata;
+			$this->session->set_userdata('otp_no',$otp_no);
 			$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=>'');
 		}
 		
@@ -526,8 +524,7 @@ class Wb extends REST_Controller
 		}
 		if($mobile_no!='' && !$exist_mobile_no && $this->session->userdata('otp_no')!='')
 		{
-			$sessdata = array('mobile_no'=> $mobile_no);
-			$this->session->userdata=$sessdata;
+			$this->session->set_userdata('mobile_no',$mobile_no);
 			$response= array('status'=>'200', 'message'=>'mobile_no change successfully!', 'data'=>'');
 		}
 		
@@ -616,11 +613,9 @@ class Wb extends REST_Controller
 		
 		if($mobile_no!='' && $exist_mobile_no)
 		{
-			$sessdata = array('otp_no'=>$otp_no,'mobile_no'=>$mobile_no,'uu_id'=>$exist_mobile_no->user_id);
-			//$this->session->set_userdata('otp_no',$otp_no);
-			//$this->session->set_userdata('mobile_no',$mobile_no);
-			//$this->session->set_userdata('uu_id',$exist_mobile_no->user_id);
-			$this->session->userdata=$sessdata;
+			$this->session->set_userdata('otp_no',$otp_no);
+			$this->session->set_userdata('mobile_no',$mobile_no);
+			$this->session->set_userdata('uu_id',$exist_mobile_no->user_id);
 			$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=>'');
 		}
 		
@@ -741,7 +736,7 @@ class Wb extends REST_Controller
 							'otp_no' 	=> '',
 							'uu_id'		=>''
 					);
-				$this->session->userdata=$sessdata;
+				$this->session->unset_userdata($sessdata);
 				$this->session->sess_destroy();
 			
 				$response= array('status'=>'200', 'message'=>'Password changed Successfully!', 'data'=>'');
