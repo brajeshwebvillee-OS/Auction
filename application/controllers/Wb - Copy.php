@@ -209,7 +209,6 @@ class Wb extends REST_Controller
 		$swift_code 			= $this->post('swift_code');
 		$password 				= $this->post('password');
 		
-		
 		if($full_name=='')
 		{
 			$response= array('status'=>'201', 'message'=>'full_name input missing!', 'data'=>'');

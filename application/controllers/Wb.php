@@ -24,7 +24,15 @@ class Wb extends REST_Controller
         parent::__construct();        
 		$this->load->model('wb_model');	
 		date_default_timezone_set('Asia/Calcutta'); 
-    }  	
+    }
+	
+	//ganerat token no.
+	function get_token($length){
+		$token = openssl_random_pseudo_bytes($length); 
+		//Convert the binary data into hexadecimal representation.
+		$token = bin2hex($token);
+		return $token;
+	}
 /*----------------------------------------Bnak API----------------------------------------------*/	
 	//Add BANK
 	function add_bank_post(){
@@ -171,22 +179,16 @@ class Wb extends REST_Controller
 		
         $this->response($response	, 200); // 200 being the HTTP response code		
 	}
-
+	
 /*----------------------------------------Registration API----------------------------------------------*/	
 	//REGISTRATION API
 	function register_post(){
-		if($this->session->userdata('otp_no')!="")
+		
+		for ($i = 0; $i<6; $i++) 
 		{
-			$otp_no = $this->session->userdata('otp_no');
+			$otp_n .= mt_rand(0,9);
 		}
-		else
-		{
-			for ($i = 0; $i<6; $i++) 
-			{
-				$otp_n .= mt_rand(0,9);
-			}
-			$otp_no = "123456";//$otp_n;
-		}
+		$otp_no = "123456";//$otp_n;
 		
 		$errors1				= "";
 		$errors2				= "";
@@ -352,8 +354,23 @@ class Wb extends REST_Controller
 			}
 			
 			if($errors1=="" && $errors2=="")
-			{				
-				$insdata = array(
+			{
+				$token_no = $this->get_token(20);
+				
+				if($city=='')
+				{
+					$city = "";
+				}
+				if($district=='')
+				{
+					$district = "";
+				}
+				if($street=='')
+				{
+					$street = "";
+				}
+				$insdata1 = array(
+						'token_no'				=> $token_no,
 						'full_name' 			=> $full_name,
 						'dob' 					=> $dob,
 						'email'	 				=> $email,
@@ -372,12 +389,20 @@ class Wb extends REST_Controller
 						'swift_code'			=> $swift_code,
 						'password'				=> $password,
 						'user_doc'				=> $user_doc,
-						'user_profile_pic' 		=> $user_profile_pic,
-						'registration_date' 	=> date('Y-m-d'),
+						'user_profile_pic' 		=> $user_profile_pic												
+				);				
+				
+				$insdata2 = array(
+						'token_no'				=> $token_no,
 						'otp_no'				=> $otp_no
 				);
-				$this->session->userdata=$insdata;
-				$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=>'');
+				
+				$this->wb_model->insertData('ac_users_temp',$insdata1);
+				$this->wb_model->insertData('ac_token',$insdata2);
+				
+				$senddata['token_no'] = $token_no;
+				
+				$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=>$senddata);
 			}
 			
 		}
@@ -388,91 +413,57 @@ class Wb extends REST_Controller
 	}
 	
 	//Submit OTP Registration API
-	function submit_otp_post(){
-		
+	function submit_otp_post(){		
+		$token_no 			= $this->post('token_no');
 		$otp 				= $this->post('otp');
+		
 		if($otp=='')
 		{
 			$response= array('status'=>'201', 'message'=>'otp input missing!', 'data'=>'');
 		}
-		if($otp!='' && $otp!=$this->session->userdata('otp_no'))
+		if($token_no=='')
+		{
+			$response= array('status'=>'201', 'message'=>'token_no input missing!', 'data'=>'');
+		}
+		$auth = $this->wb_model->getsingle('ac_token',array('token_no' => $token_no ,'otp_no' => $otp));
+		$toke = $this->wb_model->getsingle('ac_token',array('token_no' => $token_no));		
+		if($otp!='' && $token_no!='' && !$auth)
 		{
 			$response= array('status'=>'201', 'message'=>'OTP not match!', 'data'=>'');
 		}
-		if($this->session->userdata('otp_no')=='')
+		if($otp!='' && $token_no!='' && !$toke)
 		{
-			$response= array('status'=>'201', 'message'=>'Session Expired!', 'data'=>'');
+			$response= array('status'=>'201', 'message'=>'Token Expired!', 'data'=>'');
 		}
-		if($otp!='' && $this->session->userdata('otp_no')!='' && $otp==$this->session->userdata('otp_no'))
+		
+		if($otp!='' && $token_no!='' && $auth && $toke)
 		{
-			if($this->session->userdata('city')!='')
-			{
-				$city = $this->session->userdata('city');
-			}else{
-				$city ="";
-			}
-			if($this->session->userdata('district')!='')
-			{
-				$district = $this->session->userdata('district');
-			}else{
-				$district ="";
-			}
-			if($this->session->userdata('street')!='')
-			{
-				$street = $this->session->userdata('street');
-			}else{
-				$street ="";
-			}	
+			$user_data = $this->wb_model->getsingle('ac_users_temp',array('token_no' => $token_no));			
 			$insdata = array(
-						'full_name' 			=> $this->session->userdata('full_name'),
-						'dob'	 				=> $this->session->userdata('dob'),	
-						'email'	 				=> $this->session->userdata('email'),
-						'std'	 				=> $this->session->userdata('std'),						
-						'mobile_no' 			=> $this->session->userdata('mobile_no'),
-						'identification_no' 	=> $this->session->userdata('identification_no'),
-						'identification_type' 	=> $this->session->userdata('identification_type'),
-						'country'				=> $this->session->userdata('country'),
-						'province'				=> $this->session->userdata('province'),
-						'city'					=> $city,
-						'district'				=> $district,
-						'street'				=> $street,
-						'ac_holder_name'		=> $this->session->userdata('ac_holder_name'),
-						'account_no_iban'		=> $this->session->userdata('account_no_iban'),
-						'bank_id'				=> $this->session->userdata('bank_id'),
-						'swift_code'			=> $this->session->userdata('swift_code'),
-						'password'				=> md5($this->session->userdata('password')),
-						'user_doc'				=> $this->session->userdata('user_doc'),
-						'user_profile_pic' 		=> $this->session->userdata('user_profile_pic'),
-						'registration_date' 	=> $this->session->userdata('registration_date')						
-				);
+						'full_name' 			=> $user_data->full_name,
+						'dob'	 				=> $user_data->dob,	
+						'email'	 				=> $user_data->email,
+						'std'	 				=> $user_data->std,						
+						'mobile_no' 			=> $user_data->mobile_no,
+						'identification_no' 	=> $user_data->identification_no,
+						'identification_type' 	=> $user_data->identification_type,
+						'country'				=> $user_data->country,
+						'province'				=> $user_data->province,
+						'city'					=> $user_data->city,
+						'district'				=> $user_data->district,
+						'street'				=> $user_data->street,
+						'ac_holder_name'		=> $user_data->ac_holder_name,
+						'account_no_iban'		=> $user_data->account_no_iban,
+						'bank_id'				=> $user_data->bank_id,
+						'swift_code'			=> $user_data->swift_code,
+						'password'				=> md5($user_data->password),
+						'user_doc'				=> $user_data->user_doc,
+						'user_profile_pic' 		=> $user_data->user_profile_pic,
+						'registration_date' 	=> date('Y-m-d')						
+				); 
 				$this->wb_model->insertData('ac_users',$insdata);
-			
-			//SESSION DESTROY
-			$sessdata = array(
-						'full_name' 			=> '',
-						'dob'					=> '',
-						'email'	 				=> '',
-						'std'	 				=> '',						
-						'mobile_no' 			=> '',
-						'identification_no' 	=> '',
-						'identification_type' 	=> '',
-						'country'				=> '',
-						'province'				=> '',
-						'city'					=> '',
-						'district'				=> '',
-						'street'				=> '',
-						'ac_holder_name'		=> '',
-						'account_no_iban'		=> '',
-						'bank_id'				=> '',
-						'swift_code'			=> '',
-						'password'				=> '',
-						'user_doc'				=> '',
-						'user_profile_pic'		=> '',
-						'registration_date' 	=> '',
-						'otp_no'				=> ''
-				);
-			$this->session->userdata=$sessdata;
-			$this->session->sess_destroy(); 
+				$this->wb_model->deleteData('ac_token',array('token_no' => $token_no));
+				$this->wb_model->deleteData('ac_users_temp',array('token_no' => $token_no));
 			
 			$response= array('status'=>'200', 'message'=>'Registration Successfully!', 'data'=>'');
 		}
@@ -480,28 +471,22 @@ class Wb extends REST_Controller
 	}
 	
 	// Resend OTP
-	function resend_otp_get(){
-		if($this->session->userdata('otp_no')!="")
+	function resend_otp_post(){
+		$token_no 				= $this->post('token_no');
+		if($token_no=='')
 		{
-			$otp_no = $this->session->userdata('otp_no');
+			$response= array('status'=>'201', 'message'=>'token_no input missing!', 'data'=>'');
+		}		
+		$toke = $this->wb_model->getsingle('ac_token',array('token_no' => $token_no));		
+		if(!$toke)
+		{
+			$response= array('status'=>'201', 'message'=>'Wrong Token Number or Token Expired!', 'data'=>'');
 		}
-		else
+		if($token_no!='' && $toke)
 		{
-			for ($i = 0; $i<6; $i++) 
-			{
-				$otp_n .= mt_rand(0,9);
-			}
-			$otp_no = "123456";//$otp_n;
-		}
-		if($this->session->userdata('otp_no')=='')
-		{
-			$response= array('status'=>'201', 'message'=>'Session Expired!', 'data'=>'');
-		}
-		else
-		{
-			$sessdata = array('full_name'=> $otp_no);
-			$this->session->userdata=$sessdata;
-			$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=>'');
+			$otp = $toke->otp_no;
+			$senddata['token_no'] = $token_no;
+			$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=>$senddata);
 		}
 		
 		$this->response($response	, 200); // 200 being the HTTP response code		
@@ -510,7 +495,9 @@ class Wb extends REST_Controller
 	//change mobile no. Registration API
 	function change_mobile_no_post(){
 		$mobile_no 				= $this->post('mobile_no');
-		$exist_mobile_no = $this->wb_model->getsingle('ac_users',array('mobile_no' => $mobile_no));
+		$token_no 				= $this->post('token_no');
+		$exist_mobile_no 	= $this->wb_model->getsingle('ac_users',array('mobile_no' => $mobile_no));
+		$toke 				= $this->wb_model->getsingle('ac_token',array('token_no' => $token_no));		
 		if($mobile_no=='')
 		{
 			$response= array('status'=>'201', 'message'=>'mobile_no input missing!', 'data'=>'');
@@ -518,17 +505,22 @@ class Wb extends REST_Controller
 		else if($mobile_no!='' && $exist_mobile_no)
 		{
 			$response= array('status'=>'201', 'message'=>'mobile_no Already Exists!', 'data'=>'');
+		}		
+		if($token_no=='')
+		{
+			$response= array('status'=>'201', 'message'=>'token_no input missing!', 'data'=>'');
+		}		
+		if($token_no!='' && !$toke)
+		{
+			$response= array('status'=>'201', 'message'=>'Wrong Token OR Token Expired!', 'data'=>'');
 		}
 		
-		if($this->session->userdata('otp_no')=='')
+		if($mobile_no!='' && $token_no!='' && !$exist_mobile_no && $toke)
 		{
-			$response= array('status'=>'201', 'message'=>'Session Expired!', 'data'=>'');
-		}
-		if($mobile_no!='' && !$exist_mobile_no && $this->session->userdata('otp_no')!='')
-		{
-			$sessdata = array('mobile_no'=> $mobile_no);
-			$this->session->userdata=$sessdata;
-			$response= array('status'=>'200', 'message'=>'mobile_no change successfully!', 'data'=>'');
+			$senddata['token_no'] = $token_no;
+			$mobile = array('mobile_no'=> $mobile_no);
+			$this->wb_model->updateData('ac_token',$mobile,array('token_no' => $token_no));		
+			$response= array('status'=>'200', 'message'=>'mobile_no change successfully!', 'data'=>$senddata);
 		}
 		
 		$this->response($response	, 200); // 200 being the HTTP response code		
@@ -590,18 +582,13 @@ class Wb extends REST_Controller
 	
 	//Forgot Password
 	function forgot_password_post(){
-		if($this->session->userdata('otp_no')!="")
+		
+		for ($i = 0; $i<6; $i++) 
 		{
-			$otp_no = $this->session->userdata('otp_no');
+			$otp_n .= mt_rand(0,9);
 		}
-		else
-		{
-			for ($i = 0; $i<6; $i++) 
-			{
-				$otp_n .= mt_rand(0,9);
-			}
-			$otp_no = "123456";//$otp_n;
-		}
+		$otp_no = "123456";//$otp_n;
+	
 		
 		$mobile_no 		 = $this->post('mobile_no');
 		$exist_mobile_no = $this->wb_model->getsingle('ac_users',array('mobile_no' => $mobile_no));
@@ -616,12 +603,18 @@ class Wb extends REST_Controller
 		
 		if($mobile_no!='' && $exist_mobile_no)
 		{
-			$sessdata = array('otp_no'=>$otp_no,'mobile_no'=>$mobile_no,'uu_id'=>$exist_mobile_no->user_id);
-			//$this->session->set_userdata('otp_no',$otp_no);
-			//$this->session->set_userdata('mobile_no',$mobile_no);
-			//$this->session->set_userdata('uu_id',$exist_mobile_no->user_id);
-			$this->session->userdata=$sessdata;
-			$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=>'');
+			$token_no = $this->get_token(20);
+			$insdata = array(
+						'token_no'				=> $token_no,
+						'otp_no'				=> $otp_no,
+						'mobile_no'				=> $mobile_no,
+						'user_id'				=> $exist_mobile_no->user_id
+				);				
+			$this->wb_model->insertData('ac_token',$insdata);
+				
+			$senddata['token_no'] = $token_no;
+			
+			$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=>$senddata);
 		}
 		
 		$this->response($response	, 200); // 200 being the HTTP response code		
@@ -629,20 +622,28 @@ class Wb extends REST_Controller
 	
 	//Forgot Password Submit OTP
 	function forgot_submit_otp_post(){
-		$otp 				= $this->post('otp');
+		$token_no 			= $this->post('token_no');
+		$otp 				= $this->post('otp');		
 		if($otp=='')
 		{
 			$response= array('status'=>'201', 'message'=>'otp input missing!', 'data'=>'');
 		}
-		if($otp!='' && $otp!=$this->session->userdata('otp_no'))
+		if($token_no=='')
+		{
+			$response= array('status'=>'201', 'message'=>'token_no input missing!', 'data'=>'');
+		}
+		$auth = $this->wb_model->getsingle('ac_token',array('token_no' => $token_no ,'otp_no' => $otp));
+		$toke = $this->wb_model->getsingle('ac_token',array('token_no' => $token_no));		
+		if($otp!='' && $token_no!='' && !$auth)
 		{
 			$response= array('status'=>'201', 'message'=>'OTP not match!', 'data'=>'');
 		}
-		if($this->session->userdata('otp_no')=='')
+		if($otp!='' && $token_no!='' && !$toke)
 		{
-			$response= array('status'=>'201', 'message'=>'Session Expired!', 'data'=>'');
+			$response= array('status'=>'201', 'message'=>'Token Expired!', 'data'=>'');
 		}
-		if($otp!='' && $this->session->userdata('otp_no')!='' && $otp==$this->session->userdata('otp_no'))
+		
+		if($otp!='' && $token_no!='' && $auth && $toke)
 		{
 			for ($i = 0; $i<6; $i++) 
 			{
@@ -650,11 +651,9 @@ class Wb extends REST_Controller
 			}
 			$new_password = "123456";//$newpwd;
 			
-			$mobile_no = $this->session->userdata('mobile_no');
-			$uu_id = $this->session->userdata('uu_id');
-			$this->wb_model->updateData('ac_users',array('password'=>md5($new_password)),array('mobile_no'=>$mobile_no));
-				
-			$response= array('status'=>'200', 'message'=>'Password send Successfully!', 'data'=>'');
+			$this->wb_model->updateData('ac_users',array('password'=>md5($new_password)),array('user_id'=>$toke->user_id));
+			$senddata['token_no'] = $token_no;
+			$response= array('status'=>'200', 'message'=>'Password send Successfully!', 'data'=> $senddata);
 		}
 		$this->response($response	, 200); // 200 being the HTTP response code		
 	}
@@ -707,11 +706,14 @@ class Wb extends REST_Controller
 	
 	//Reset Password
 	function reset_password_post(){		
-			$user_id 				= $this->session->userdata('uu_id');			
-			$temp_password 			= $this->post('temp_password');
-			$new_password 			= $this->post('new_password');	
-					
-			$user_data = $this->wb_model->getsingle('ac_users',array('user_id' => $user_id,'password'=>md5($temp_password)));
+			$token_no 			= $this->post('token_no');		
+			$temp_password 		= $this->post('temp_password');
+			$new_password 		= $this->post('new_password');	
+			
+			
+			$auth = $this->wb_model->getsingle('ac_token',array('token_no' => $token_no));
+			$user_data = $this->wb_model->getsingle('ac_users',array('user_id' => $auth->user_id,'password'=>md5($temp_password)));			
+			
 			if($temp_password=='')
 			{
 				$response= array('status'=>'201', 'message'=>'temp_password input missing!', 'data'=>'');
@@ -728,22 +730,19 @@ class Wb extends REST_Controller
 			{
 				$response= array('status'=>'201', 'message'=>'new_password must be minimum 6 characters long!', 'data'=>'');
 			}
-			if(!isset($user_id))
+			if($temp_password!='' && $new_password!='' && $token_no!='' && !$auth)
 			{
-				$response= array('status'=>'201', 'message'=>'Session Expired!', 'data'=>'');
+				$response= array('status'=>'201', 'message'=>'Wrong Token Or Token Expired!', 'data'=>'');
+			}			
+			if($token_no=='')
+			{
+				$response= array('status'=>'201', 'message'=>'token_no input missing!', 'data'=>'');
 			}
-			if($new_password!='' && isset($user_id) && $user_data && strlen($new_password)>5)
-			{
-				$this->wb_model->updateData('ac_users',array('password'=>md5($new_password)),array('user_id'=>$user_id));
-				//SESSION DESTROY
-				$sessdata = array(											
-							'mobile_no' => '',						
-							'otp_no' 	=> '',
-							'uu_id'		=>''
-					);
-				$this->session->userdata=$sessdata;
-				$this->session->sess_destroy();
 			
+			if($token_no!='' && $new_password!='' && $temp_password!='' && $auth && $user_data && strlen($new_password)>5)
+			{
+				$this->wb_model->updateData('ac_users',array('password'=>md5($new_password)),array('user_id'=>$auth->user_id));
+				$this->wb_model->deleteData('ac_token',array('token_no' => $token_no));		
 				$response= array('status'=>'200', 'message'=>'Password changed Successfully!', 'data'=>'');
 			}		
 		$this->response($response	, 200); // 200 being the HTTP response code		
@@ -806,26 +805,20 @@ class Wb extends REST_Controller
 	}
 	
 	//Update Profile
-	function update_profile_post(){
-		
-			if($this->session->userdata('otp_no')!="")
-			{
-				$otp_no = $this->session->userdata('otp_no');
-			}
-			else
-			{
-				for ($i = 0; $i<6; $i++) 
-				{
-					$otp_n .= mt_rand(0,9);
-				}
-				$otp_no = "123456";//$otp_n;
-			}
+	function update_profile_post(){		
+	
+		for ($i = 0; $i<6; $i++) 
+		{
+			$otp_n .= mt_rand(0,9);
+		}
+		$otp_no = "123456";//$otp_n;			
 			
 			$errors1				= "";
 			$errors2				= "";
 			$otp 					= "";
 			$user_id 				= $this->post('user_id');
 			$full_name 				= $this->post('full_name');
+			$dob 					= date('Y-m-d',$this->post('dob'));
 			$email 					= $this->post('email');
 			$std 					= $this->post('std');
 			$mobile_no 				= $this->post('mobile_no');
@@ -848,6 +841,10 @@ class Wb extends REST_Controller
 			if($full_name=='')
 			{
 				$response= array('status'=>'201', 'message'=>'full_name input missing!', 'data'=>'');
+			}
+			if($dob=='')
+			{
+				$response= array('status'=>'201', 'message'=>'dob input missing!', 'data'=>'');
 			}
 			$exist_email = $this->wb_model->getsingle('ac_users',array('email' => $email,'user_id !='=>$user_id));
 			$regex = '/^[^0-9][_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,3})$/';
@@ -910,7 +907,7 @@ class Wb extends REST_Controller
 			}
 			
 			
-			if($user_id!='' && $full_name!='' && $email!='' && preg_match($regex, $email) && !$exist_email && $std!='' && $mobile_no!='' && !$exist_mobile_no 
+			if($user_id!='' && $full_name!='' && $dob!='' && $email!='' && preg_match($regex, $email) && !$exist_email && $std!='' && $mobile_no!='' && !$exist_mobile_no 
 				&& $identification_no!='' && $identification_type!='' && $country!='' && $province!='' && $ac_holder_name!=''
 				&& $account_no_iban!='' && $bank_id!='' && $swift_code!='')
 			{
@@ -969,10 +966,26 @@ class Wb extends REST_Controller
 				}
 				
 				if($errors1=="" && $errors2=="")
-				{				
-					$insdata = array(
+				{
+					$token_no = $this->get_token(20);
+				
+					if($city=='')
+					{
+						$city = "";
+					}
+					if($district=='')
+					{
+						$district = "";
+					}
+					if($street=='')
+					{
+						$street = "";
+					}
+					$insdata1 = array(
+							'token_no'				=> $token_no,
 							'user_id' 				=> $user_id,
 							'full_name' 			=> $full_name,
+							'dob' 					=> $dob,
 							'email'	 				=> $email,
 							'std'	 				=> $std,						
 							'mobile_no' 			=> $mobile_no,
@@ -988,11 +1001,20 @@ class Wb extends REST_Controller
 							'bank_id'				=> $bank_id,
 							'swift_code'			=> $swift_code,						
 							'user_doc'				=> $user_doc,
-							'user_profile_pic'		=> $user_profile_pic,
+							'user_profile_pic' 		=> $user_profile_pic												
+					);				
+					
+					$insdata2 = array(
+							'token_no'				=> $token_no,
 							'otp_no'				=> $otp_no
 					);
-					$this->session->set_userdata($insdata);
-					$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=>'');
+					
+					$this->wb_model->insertData('ac_users_temp',$insdata1);
+					$this->wb_model->insertData('ac_token',$insdata2);
+					
+					$senddata['token_no'] = $token_no;
+					
+					$response= array('status'=>'200', 'message'=>'OTP send successfully!', 'data'=> $senddata);
 				}
 				
 			}		
@@ -1003,71 +1025,60 @@ class Wb extends REST_Controller
 	
 	//Submit OTP Edit Profile
 	function profile_submit_otp_post(){
+		$token_no 			= $this->post('token_no');
+		$otp 				= $this->post('otp');
 		
-			$otp 				= $this->post('otp');
-			if($otp=='')
-			{
-				$response= array('status'=>'201', 'message'=>'otp input missing!', 'data'=>'');
-			}
-			if($otp!='' && $otp!=$this->session->userdata('otp_no'))
-			{
-				$response= array('status'=>'201', 'message'=>'OTP not match!', 'data'=>'');
-			}
-			if($this->session->userdata('otp_no')=='')
-			{
-				$response= array('status'=>'201', 'message'=>'Session Expired!', 'data'=>'');
-			}
-			if($otp!='' && $this->session->userdata('otp_no')!='' && $otp==$this->session->userdata('otp_no'))
-			{
-				$updata = array(
-							'full_name' 			=> $this->session->userdata('full_name'),
-							'email'	 				=> $this->session->userdata('email'),
-							'std'	 				=> $this->session->userdata('std'),						
-							'mobile_no' 			=> $this->session->userdata('mobile_no'),
-							'identification_no' 	=> $this->session->userdata('identification_no'),
-							'identification_type' 	=> $this->session->userdata('identification_type'),
-							'country'				=> $this->session->userdata('country'),
-							'province'				=> $this->session->userdata('province'),
-							'city'					=> $this->session->userdata('city'),
-							'district'				=> $this->session->userdata('district'),
-							'street'				=> $this->session->userdata('street'),
-							'ac_holder_name'		=> $this->session->userdata('ac_holder_name'),
-							'account_no_iban'		=> $this->session->userdata('account_no_iban'),
-							'bank_id'				=> $this->session->userdata('bank_id'),
-							'swift_code'			=> $this->session->userdata('swift_code'),						
-							'user_profile_pic'		=> $this->session->userdata('user_profile_pic'),
-							'user_doc'				=> $this->session->userdata('user_doc')
-							
-					);
-				$this->wb_model->updateData('ac_users',$updata,array('user_id'=>$this->session->userdata('user_id')));			
+		if($otp=='')
+		{
+			$response= array('status'=>'201', 'message'=>'otp input missing!', 'data'=>'');
+		}
+		if($token_no=='')
+		{
+			$response= array('status'=>'201', 'message'=>'token_no input missing!', 'data'=>'');
+		}
+		$auth = $this->wb_model->getsingle('ac_token',array('token_no' => $token_no ,'otp_no' => $otp));
+		$toke = $this->wb_model->getsingle('ac_token',array('token_no' => $token_no));		
+		if($otp!='' && $token_no!='' && !$auth)
+		{
+			$response= array('status'=>'201', 'message'=>'OTP not match!', 'data'=>'');
+		}
+		if($otp!='' && $token_no!='' && !$toke)
+		{
+			$response= array('status'=>'201', 'message'=>'Token Expired!', 'data'=>'');
+		}
+		
+		if($otp!='' && $token_no!='' && $auth && $toke)
+		{
+			$user_data = $this->wb_model->getsingle('ac_users_temp',array('token_no' => $token_no));			
+			$updata = array(
+						'full_name' 			=> $user_data->full_name,
+						'dob'	 				=> $user_data->dob,	
+						'email'	 				=> $user_data->email,
+						'std'	 				=> $user_data->std,						
+						'mobile_no' 			=> $user_data->mobile_no,
+						'identification_no' 	=> $user_data->identification_no,
+						'identification_type' 	=> $user_data->identification_type,
+						'country'				=> $user_data->country,
+						'province'				=> $user_data->province,
+						'city'					=> $user_data->city,
+						'district'				=> $user_data->district,
+						'street'				=> $user_data->street,
+						'ac_holder_name'		=> $user_data->ac_holder_name,
+						'account_no_iban'		=> $user_data->account_no_iban,
+						'bank_id'				=> $user_data->bank_id,
+						'swift_code'			=> $user_data->swift_code,						
+						'user_doc'				=> $user_data->user_doc,
+						'user_profile_pic' 		=> $user_data->user_profile_pic
+										
+				);
+				$this->wb_model->updateData('ac_users',$updata,array('user_id'=>$user_data->user_id));			
 				
-				//SESSION DESTROY
-				$sessdata = array(
-							'user_id' 				=> '',
-							'full_name' 			=> '',
-							'email'	 				=> '',
-							'std'	 				=> '',						
-							'mobile_no' 			=> '',
-							'identification_no' 	=> '',
-							'identification_type' 	=> '',
-							'country'				=> '',
-							'province'				=> '',
-							'city'					=> '',
-							'district'				=> '',
-							'street'				=> '',
-							'ac_holder_name'		=> '',
-							'account_no_iban'		=> '',
-							'bank_id'				=> '',
-							'swift_code'			=> '',						
-							'user_doc'				=> '',
-							'user_profile_pic'		=> '',
-							'otp_no'				=> ''
-					);
-				$this->session->unset_userdata($sessdata);
-				$this->session->sess_destroy(); 
-				
-				$response= array('status'=>'200', 'message'=>'Profile Update Successfully!', 'data'=>'');
-			}
+				$this->wb_model->deleteData('ac_token',array('token_no' => $token_no));
+				$this->wb_model->deleteData('ac_users_temp',array('token_no' => $token_no));
+			
+			$response= array('status'=>'200', 'message'=>'Profile Update Successfully!', 'data'=>'');
+		}
+			
 		
 		$this->response($response	, 200); // 200 being the HTTP response code		
 	}
