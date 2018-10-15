@@ -2792,9 +2792,12 @@ class Wb extends REST_Controller
 			{
 				$response= array('status'=>'201', 'message'=>'bid_amount input missing!', 'data'=>'');
 			}
-			
+			if($bid_amount!='' && $products_data->current_bid_amount > $bid_amount)
+			{
+				$response= array('status'=>'201', 'message'=>'bid_amount is low!', 'data'=>'');
+			}
 			$data = $this->wb_model->getsingle('ac_wallet',array('user_id'=>$user_id));
-			if($user_id!='' && $users_data && $product_id!='' && $products_data  && $products_data->bid_end_date_time >= date('Y-m-d h:i:s'))
+			if($user_id!='' && $users_data && $product_id!='' && $products_data  && $products_data->bid_end_date_time >= date('Y-m-d h:i:s') && $products_data->current_bid_amount < $bid_amount)
 			{
 				$ins_data = array(
 						'user_id'		=> $user_id,
@@ -2822,12 +2825,8 @@ class Wb extends REST_Controller
 				// Win success Message
 				if($products_data->current_bid_amount < $bid_amount)
 				{
-					$response= array('status'=>'200', 'message'=>'your bid placed successfully for WInnnn', 'data'=>'');
-				}
-				else if($products_data->selling_price < $bid_amount)
-				{
-					$response= array('status'=>'200', 'message'=>'your bid placed successfully win for desire price', 'data'=>'');
-				}
+					$response= array('status'=>'200', 'message'=>'your bid placed successfully for Winning!', 'data'=>'');
+				}				
 				else{
 					$response= array('status'=>'200', 'message'=>'your bid placed successfully', 'data'=>'');
 				}
@@ -2977,7 +2976,8 @@ class Wb extends REST_Controller
 				$category_data = $this->wb_model->getsingle('ac_categories',array('category_id' => $d->category_id));		
 				$final['category_name'] 		= $category_data->name;
 				$final['description'] 			= $d->description;
-				$final['selling_price'] 		= $d->selling_price;				
+				$final['selling_price'] 		= $d->selling_price;
+				$final['heighest_bid'] 			= $d->current_bid_amount;				
 				$final['bid_start_date_time'] 	= $d->bid_start_date_time;
 				$final['bid_end_date_time'] 	= $d->bid_end_date_time;
 				
@@ -3083,28 +3083,24 @@ class Wb extends REST_Controller
 					}else{
 						$final['status'] 	= "Deactive";
 					}
-					$bids_data = $this->wb_model->getAllwhere('ac_product_bids',array('product_id' => $d['product_id'] , 'user_id' => $d['user_id']));		
-					if(count($bids_data)>0)
-					{
-						$final_bids = array();
-						foreach($bids_data as $b)
-						{
-							$bb['id'] 			= $b->id;
-							$bb['bid_amount'] 	= $b->bid_amount;
-							$bb['bid_date'] 	= $b->bid_date;
-							$final_bids[] = $bb;
-						}
-					$final['bids'] 	= $final_bids;		
+					$bids_data = $this->wb_model->select_max_bids($d['product_id'] ,$d['user_id']);	
+					
+					if(isset($bids_data[0]->bid_amount) && $bids_data[0]->bid_amount!="")
+					{						
+					$final['my_heighest_bid'] 	= $bids_data[0]->bid_amount;		
 					}
 					else{
-					$final['bids'] 	= "";	
+					$final['my_heighest_bid'] 	= "";	
 					}
 					
 					$final_data[] = $final;
 				}			
 				$response= array('status'=>'200', 'message'=>'success', 'data'=>$final_data );
 			}else{
-				$response= array('status'=>'201', 'message'=>'you are not bid any products!', 'data'=>'');
+				if($user_id!="")
+				{
+					$response= array('status'=>'201', 'message'=>'you are not bid any products!', 'data'=>'');
+				}
 			}
 		
 		
